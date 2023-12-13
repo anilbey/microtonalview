@@ -6,43 +6,33 @@ import pandas as pd
 def frequency_to_color(frequency, min_freq, max_freq):
     # Normalize frequency value
     value = (frequency - min_freq) / (max_freq - min_freq)
-
-    # Simple linear interpolation between blue (low freq) and red (high freq)
     return (int(255 * value), 0, int(255 * (1 - value)))
 
 
+def blend_color(base_color, confidence):
+    # Apply alpha based on confidence to the base color
+    alpha = int(255 * confidence)
+    return base_color + (alpha,)
+
+
 def main():
-    # Initialize Pygame and its mixer
     pygame.init()
     pygame.mixer.init()
     pygame.font.init()
     width, height = 800, 600
-    screen = pygame.display.set_mode((width, height))
+    screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
     pygame.display.set_caption("Real-Time Pitch Visualization")
 
-    # Load data
     data = pd.read_csv("tunar-hüzzam.f0.csv", dtype=float)
-
-    # Load audio
     audio_file = "tunar-hüzzam.wav"
     pygame.mixer.music.load(audio_file)
 
-    # Visualization parameters
     min_frequency = data["frequency"].min()
     max_frequency = data["frequency"].max()
-
-    # Preprocess the data for efficient access
-    data["color"] = data["frequency"].apply(
-        lambda f: frequency_to_color(f, min_frequency, max_frequency)
-    )
-
     scale_y = height / (max_frequency - min_frequency)
     scale_x = width / 5
 
-    # Font for FPS display
     font = pygame.font.SysFont(None, 36)
-
-    # Play audio
     pygame.mixer.music.play()
 
     running = True
@@ -53,19 +43,25 @@ def main():
                 running = False
 
         current_time = pygame.mixer.music.get_pos() / 1000.0
-        start_time = max(current_time - 2.5, 0)
-        end_time = current_time + 2.5
-        relevant_data = data[(data["time"] >= start_time) & (data["time"] <= end_time)]
+        relevant_data = data[
+            (data["time"] >= current_time - 2.5) & (data["time"] <= current_time + 2.5)
+        ]
 
         screen.fill((255, 255, 255))
         for _, row in relevant_data.iterrows():
             x = (row["time"] - current_time + 2.5) * scale_x
             y = height - (row["frequency"] - min_frequency) * scale_y
-            pygame.draw.circle(screen, row["color"], (int(x), int(y)), 3)
+            base_color = frequency_to_color(
+                row["frequency"], min_frequency, max_frequency
+            )
+            color = blend_color(base_color, row["confidence"])
+
+            # Draw circle on a separate surface with alpha
+            circle_surface = pygame.Surface((6, 6), pygame.SRCALPHA)
+            pygame.draw.circle(circle_surface, color, (3, 3), 3)
+            screen.blit(circle_surface, (int(x) - 3, int(y) - 3))
 
         pygame.draw.line(screen, (255, 0, 0), (width // 2, 0), (width // 2, height), 2)
-
-        # Calculate and render FPS
         fps = clock.get_fps()
         fps_text = font.render(f"{fps:.2f} FPS", True, (0, 0, 0))
         screen.blit(fps_text, (10, 10))
@@ -74,5 +70,6 @@ def main():
         clock.tick(60)
 
     pygame.quit()
+
 
 main()
