@@ -6,6 +6,9 @@ import pandas as pd
 def frequency_to_color(frequency, min_freq, max_freq):
     # Normalize frequency value
     value = (frequency - min_freq) / (max_freq - min_freq)
+    # Apply a non-linear transformation to make changes more sensitive
+    value = pow(value, 0.4)
+    # Generate color using a more sensitive scale
     return (int(255 * value), 0, int(255 * (1 - value)))
 
 
