@@ -22,7 +22,7 @@ def main():
     pygame.init()
     pygame.mixer.init()
     pygame.font.init()
-    width, height = 800, 600
+    width, height = 1920, 1080
     screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
     pygame.display.set_caption("Real-Time Pitch Visualization")
 
@@ -32,7 +32,13 @@ def main():
 
     min_frequency = data["frequency"].min()
     max_frequency = data["frequency"].max()
-    scale_y = height / (max_frequency - min_frequency)
+
+    # Define padding as a percentage of the height
+    padding_percent = 0.25  # 10% padding at the bottom
+    padding_bottom = int(height * padding_percent)
+
+    # Adjust scale_y to fit within the screen, considering padding
+    scale_y = (height - padding_bottom) / (max_frequency - min_frequency)
     scale_x = width / 5
 
     font = pygame.font.SysFont(None, 36)
@@ -53,13 +59,12 @@ def main():
         screen.fill((255, 255, 255))
         for _, row in relevant_data.iterrows():
             x = (row["time"] - current_time + 2.5) * scale_x
-            y = height - (row["frequency"] - min_frequency) * scale_y
+            y = (height - padding_bottom) - (row["frequency"] - min_frequency) * scale_y
             base_color = frequency_to_color(
                 row["frequency"], min_frequency, max_frequency
             )
             color = blend_color(base_color, row["confidence"])
 
-            # Draw circle on a separate surface with alpha
             circle_surface = pygame.Surface((6, 6), pygame.SRCALPHA)
             pygame.draw.circle(circle_surface, color, (3, 3), 3)
             screen.blit(circle_surface, (int(x) - 3, int(y) - 3))
