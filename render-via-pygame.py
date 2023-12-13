@@ -1,5 +1,5 @@
 import pygame
-import pandas as pd
+import polars as pl
 
 
 # Custom function to map frequency to color
@@ -26,7 +26,8 @@ def main():
     screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
     pygame.display.set_caption("Real-Time Pitch Visualization")
 
-    data = pd.read_csv("tunar-hüzzam.f0.csv", dtype=float)
+    # Use Polars to load data
+    data = pl.read_csv("tunar-hüzzam.f0.csv")
     audio_file = "tunar-hüzzam.wav"
     pygame.mixer.music.load(audio_file)
 
@@ -52,12 +53,14 @@ def main():
                 running = False
 
         current_time = pygame.mixer.music.get_pos() / 1000.0
-        relevant_data = data[
-            (data["time"] >= current_time - 2.5) & (data["time"] <= current_time + 2.5)
-        ]
+        # Use Polars for data filtering
+        relevant_data = data.filter(
+            (data["time"] >= current_time - 2.5) & 
+            (data["time"] <= current_time + 2.5)
+        )
 
         screen.fill((255, 255, 255))
-        for _, row in relevant_data.iterrows():
+        for row in relevant_data.iter_rows(named=True):
             x = (row["time"] - current_time + 2.5) * scale_x
             y = (height - padding_bottom) - (row["frequency"] - min_frequency) * scale_y
             base_color = frequency_to_color(
