@@ -1,3 +1,4 @@
+import random
 import pygame
 import polars as pl
 
@@ -16,6 +17,24 @@ def blend_color(base_color, confidence):
     # Apply alpha based on confidence to the base color
     alpha = int(255 * confidence)
     return base_color + (alpha,)
+
+
+class Particle:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.size = random.randint(1, 2)
+        self.life = random.randint(20, 50)
+        self.color = (225, 0, 0)  # Red color
+
+    def update(self):
+        self.x += random.randint(-2, 2)
+        self.y += random.randint(-2, 2)
+        self.life -= 1  # Decrease life
+
+    def draw(self, screen):
+        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.size)
+
 
 
 def main():
@@ -47,6 +66,9 @@ def main():
 
     running = True
     clock = pygame.time.Clock()
+
+    particles = []
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -60,6 +82,14 @@ def main():
         )
 
         screen.fill((255, 255, 255))
+
+        # Update and draw particles
+        for particle in particles[:]:
+            particle.update()
+            particle.draw(screen)
+            if particle.life <= 0:
+                particles.remove(particle)
+
         for row in relevant_data.iter_rows(named=True):
             x = (row["time"] - current_time + 2.5) * scale_x
             y = (height - padding_bottom) - (row["frequency"] - min_frequency) * scale_y
@@ -71,6 +101,11 @@ def main():
             circle_surface = pygame.Surface((6, 6), pygame.SRCALPHA)
             pygame.draw.circle(circle_surface, color, (3, 3), 3)
             screen.blit(circle_surface, (int(x) - 3, int(y) - 3))
+
+            if row['time'] == current_time:
+                # Create particles for the current circle
+                for _ in range(2):  # Number of particles
+                    particles.append(Particle(int(x), int(y)))
 
         pygame.draw.line(screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 2)
         fps = clock.get_fps()
