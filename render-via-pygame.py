@@ -72,7 +72,7 @@ def main():
             pygame.draw.circle(circle_surface, color, (3, 3), 3)
             screen.blit(circle_surface, (int(x) - 3, int(y) - 3))
 
-        pygame.draw.line(screen, (255, 0, 0), (width // 2, 0), (width // 2, height), 2)
+        pygame.draw.line(screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 2)
         fps = clock.get_fps()
         fps_text = font.render(f"{fps:.2f} FPS", True, (0, 0, 0))
         screen.blit(fps_text, (10, 10))
