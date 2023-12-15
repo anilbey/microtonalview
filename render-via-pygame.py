@@ -1,3 +1,4 @@
+import argparse
 import random
 import pygame
 import polars as pl
@@ -38,6 +39,15 @@ class Particle:
 
 
 def main():
+
+    parser = argparse.ArgumentParser(description="Real-Time Pitch Visualization")
+
+    # Add the arguments
+    parser.add_argument('name', metavar='name', type=str, help='the name of the song')
+
+    # Execute the parse_args() method
+    args = parser.parse_args()
+
     pygame.init()
     pygame.mixer.init()
     pygame.font.init()
@@ -46,8 +56,8 @@ def main():
     pygame.display.set_caption("Real-Time Pitch Visualization")
 
     # Use Polars to load data
-    data = pl.read_csv("tunar-hüzzam.f0.csv")
-    audio_file = "tunar-hüzzam.wav"
+    data = pl.read_csv(f"{args.name}.f0.csv")
+    audio_file = f"{args.name}.wav"
     pygame.mixer.music.load(audio_file)
 
     min_frequency = data["frequency"].min()
