@@ -20,22 +20,9 @@ def blend_color(base_color, confidence):
     return base_color + (alpha,)
 
 
-class Particle:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.size = random.randint(1, 2)
-        self.life = random.randint(20, 50)
-        self.color = (225, 0, 0)  # Red color
-
-    def update(self):
-        self.x += random.randint(-2, 2)
-        self.y += random.randint(-2, 2)
-        self.life -= 1  # Decrease life
-
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.size)
-
+def loudness_to_size(loudness, min_loudness, max_loudness):
+    normalized_loudness = (loudness - min_loudness) / (max_loudness - min_loudness)
+    return max(1, int(normalized_loudness * 10))  # Scale and ensure minimum size of 1
 
 
 def main():
@@ -56,12 +43,15 @@ def main():
     pygame.display.set_caption("Real-Time Pitch Visualization")
 
     # Use Polars to load data
-    data = pl.read_csv(f"{args.name}.f0.csv")
+    data = pl.read_csv(f"{args.name}-loudness.csv")
     audio_file = f"{args.name}.wav"
     pygame.mixer.music.load(audio_file)
 
     min_frequency = data["frequency"].min()
     max_frequency = data["frequency"].max()
+
+    min_loudness = data["loudness"].min()
+    max_loudness = data["loudness"].max()
 
     # Define padding as a percentage of the height
     padding_percent = 0.25  # 10% padding at the bottom
@@ -103,21 +93,23 @@ def main():
         for row in relevant_data.iter_rows(named=True):
             x = (row["time"] - current_time + 2.5) * scale_x
             y = (height - padding_bottom) - (row["frequency"] - min_frequency) * scale_y
-            base_color = frequency_to_color(
-                row["frequency"], min_frequency, max_frequency
-            )
-            color = blend_color(base_color, row["confidence"])
+            circle_size = loudness_to_size(row["loudness"], min_loudness, max_loudness)
 
-            circle_surface = pygame.Surface((6, 6), pygame.SRCALPHA)
-            pygame.draw.circle(circle_surface, color, (3, 3), 3)
-            screen.blit(circle_surface, (int(x) - 3, int(y) - 3))
+            is_current_circle = abs(row["time"] - current_time) < 0.01  # Adjust the threshold as needed
 
-            if row['time'] == current_time:
-                # Create particles for the current circle
-                for _ in range(2):  # Number of particles
-                    particles.append(Particle(int(x), int(y)))
+            if is_current_circle:
+                # Make the current circle red
+                color = (225, 0, 0)
+            else:
+                base_color = frequency_to_color(row["frequency"], min_frequency, max_frequency)
+                color = blend_color(base_color, row["confidence"])
 
-        pygame.draw.line(screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 2)
+            circle_surface = pygame.Surface((2 * circle_size, 2 * circle_size), pygame.SRCALPHA)
+            pygame.draw.circle(circle_surface, color, (circle_size, circle_size), circle_size)
+            screen.blit(circle_surface, (int(x) - circle_size, int(y) - circle_size))
+
+
+        pygame.draw.line(screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 1)
         fps = clock.get_fps()
         fps_text = font.render(f"{fps:.2f} FPS", True, (0, 0, 0))
         screen.blit(fps_text, (10, 10))
