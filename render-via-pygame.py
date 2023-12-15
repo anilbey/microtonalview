@@ -1,5 +1,4 @@
 import argparse
-import random
 import pygame
 import polars as pl
 
