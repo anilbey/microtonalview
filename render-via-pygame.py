@@ -66,8 +66,6 @@ def main():
     running = True
     clock = pygame.time.Clock()
 
-    particles = []
-
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -80,13 +78,6 @@ def main():
         )
 
         screen.fill((255, 255, 255))
-
-        # Update and draw particles
-        for particle in particles[:]:
-            particle.update()
-            particle.draw(screen)
-            if particle.life <= 0:
-                particles.remove(particle)
 
         for row in relevant_data.iter_rows(named=True):
             x = (row["time"] - current_time + 2.5) * scale_x
