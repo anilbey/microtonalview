@@ -99,7 +99,7 @@ def main():
 
             if is_current_circle:
                 # Make the current circle red
-                color = (225, 0, 0)
+                color = (255, 0, 0)
             else:
                 base_color = frequency_to_color(
                     row["frequency"], min_frequency, max_frequency
