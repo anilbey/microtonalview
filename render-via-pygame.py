@@ -26,11 +26,10 @@ def loudness_to_size(loudness, min_loudness, max_loudness):
 
 
 def main():
-
     parser = argparse.ArgumentParser(description="Real-Time Pitch Visualization")
 
     # Add the arguments
-    parser.add_argument('name', metavar='name', type=str, help='the name of the song')
+    parser.add_argument("name", metavar="name", type=str, help="the name of the song")
 
     # Execute the parse_args() method
     args = parser.parse_args()
@@ -77,8 +76,7 @@ def main():
         current_time = pygame.mixer.music.get_pos() / 1000.0
         # Use Polars for data filtering
         relevant_data = data.filter(
-            (data["time"] >= current_time - 2.5) & 
-            (data["time"] <= current_time + 2.5)
+            (data["time"] >= current_time - 2.5) & (data["time"] <= current_time + 2.5)
         )
 
         screen.fill((255, 255, 255))
@@ -95,21 +93,30 @@ def main():
             y = (height - padding_bottom) - (row["frequency"] - min_frequency) * scale_y
             circle_size = loudness_to_size(row["loudness"], min_loudness, max_loudness)
 
-            is_current_circle = abs(row["time"] - current_time) < 0.01  # Adjust the threshold as needed
+            is_current_circle = (
+                abs(row["time"] - current_time) < 0.01
+            )  # Adjust the threshold as needed
 
             if is_current_circle:
                 # Make the current circle red
                 color = (225, 0, 0)
             else:
-                base_color = frequency_to_color(row["frequency"], min_frequency, max_frequency)
+                base_color = frequency_to_color(
+                    row["frequency"], min_frequency, max_frequency
+                )
                 color = blend_color(base_color, row["confidence"])
 
-            circle_surface = pygame.Surface((2 * circle_size, 2 * circle_size), pygame.SRCALPHA)
-            pygame.draw.circle(circle_surface, color, (circle_size, circle_size), circle_size)
+            circle_surface = pygame.Surface(
+                (2 * circle_size, 2 * circle_size), pygame.SRCALPHA
+            )
+            pygame.draw.circle(
+                circle_surface, color, (circle_size, circle_size), circle_size
+            )
             screen.blit(circle_surface, (int(x) - circle_size, int(y) - circle_size))
 
-
-        pygame.draw.line(screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 1)
+        pygame.draw.line(
+            screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 1
+        )
         fps = clock.get_fps()
         fps_text = font.render(f"{fps:.2f} FPS", True, (0, 0, 0))
         screen.blit(fps_text, (10, 10))
