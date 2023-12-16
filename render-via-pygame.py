@@ -114,6 +114,10 @@ def main():
         pygame.display.flip()
         clock.tick(60)
 
+        # Check if music is still playing
+        if not pygame.mixer.music.get_busy():
+            running = False
+
     pygame.quit()
 
 
