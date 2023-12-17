@@ -1,12 +1,11 @@
+import argparse
 import librosa
 import polars as pl
-
 
 def calculate_loudness(y, frame_length, hop_length):
     """Calculate the loudness of each frame in the audio."""
     rms = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop_length)
     return rms[0]
-
 
 def append_loudness_to_csv(wav_file, csv_file, output_file):
     # Load the WAV file
@@ -29,8 +28,15 @@ def append_loudness_to_csv(wav_file, csv_file, output_file):
     # Write the updated data back to a new CSV file
     df.write_csv(output_file)
 
+def main():
+    parser = argparse.ArgumentParser(description="Append loudness data to a CSV file")
+    parser.add_argument("wav_file", help="Path to the WAV file")
+    parser.add_argument("csv_file", help="Path to the input CSV file")
+    parser.add_argument("output_file", help="Path to the output CSV file")
+    
+    args = parser.parse_args()
 
-# Example usage
-append_loudness_to_csv(
-    "tunar-hüzzam.wav", "tunar-hüzzam.f0.csv", "tunar-hüzzam-loudness.csv"
-)
+    append_loudness_to_csv(args.wav_file, args.csv_file, args.output_file)
+
+if __name__ == "__main__":
+    main()

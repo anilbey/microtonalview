@@ -1,4 +1,5 @@
 import argparse
+import colorsys
 import pygame
 import polars as pl
 
@@ -6,11 +7,21 @@ import polars as pl
 # Custom function to map frequency to color
 def frequency_to_color(frequency, min_freq, max_freq):
     # Normalize frequency value
-    value = (frequency - min_freq) / (max_freq - min_freq)
+    normalized_value = (frequency - min_freq) / (max_freq - min_freq)
     # Apply a non-linear transformation to make changes more sensitive
-    value = pow(value, 0.4)
-    # Generate color using a more sensitive scale
-    return (int(255 * value), 155, int(255 * (1 - value)))
+    normalized_value = pow(normalized_value, 0.4)
+
+    # Use HSV color space for more vibrant colors
+    # Hue varies from 0 to 1, corresponding to the full range of colors
+    hue = normalized_value
+    saturation = 0.9  # High saturation for more vivid colors
+    value = 0.9       # High value for brightness
+
+    # Convert HSV to RGB
+    rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+    # Scale RGB values to 0-255 range
+    return tuple(int(i * 255) for i in rgb)
+
 
 
 def blend_color(base_color, confidence):
@@ -22,18 +33,18 @@ def blend_color(base_color, confidence):
 def loudness_to_size(loudness, min_loudness, max_loudness):
     normalized_loudness = (loudness - min_loudness) / (max_loudness - min_loudness)
     res = max(1, int(normalized_loudness * 10))  # Scale and ensure minimum size of 1
-    return res * 3  # Scale up to make circles bigger
+    return res * 2.5  # Scale up to make circles bigger
 
 
 def main():
     parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
 
     # Add the arguments
-    parser.add_argument("name", metavar="name", type=str, help="the name of the song")
+    parser.add_argument("features", help="The features csv for rendering")
+    parser.add_argument("audio", help="Path to the .wav file")
 
     # Execute the parse_args() method
     args = parser.parse_args()
-
     pygame.init()
     pygame.mixer.init()
     pygame.font.init()
@@ -41,9 +52,11 @@ def main():
     screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
     pygame.display.set_caption("Microtonal Pitch Visualisation")
 
-    # Use Polars to load data
-    data = pl.read_csv(f"{args.name}-loudness.csv")
-    audio_file = f"{args.name}.wav"
+    # Use Polars to load data from the features CSV file
+    data = pl.read_csv(args.features)
+
+    # Load the audio file
+    audio_file = args.audio
     pygame.mixer.music.load(audio_file)
 
     min_frequency = data["frequency"].min()
@@ -53,7 +66,7 @@ def main():
     max_loudness = data["loudness"].max()
 
     # Define padding as a percentage of the height
-    padding_percent = 0.30  # 30% padding at the bottom
+    padding_percent = 0.25  # 25% padding at the bottom
     padding_bottom = int(height * padding_percent)
 
     # Adjust scale_y to fit within the screen, considering padding
