@@ -1,7 +1,6 @@
 import argparse
 import pygame
 import polars as pl
-import vidmaker
 
 
 # Custom function to map frequency to color
@@ -62,7 +61,6 @@ def main():
     scale_x = width / 5
 
     font = pygame.font.SysFont(None, 36)
-    video = vidmaker.Video(f"{args.name}_recording.mp4", late_export=True)
     pygame.mixer.music.play()
 
     running = True
@@ -115,15 +113,12 @@ def main():
         screen.blit(fps_text, (10, 10))
 
         pygame.display.flip()
-        video.update(pygame.surfarray.pixels3d(screen).swapaxes(0, 1), inverted=False)
         clock.tick(60)
 
         # Check if music is still playing
         if not pygame.mixer.music.get_busy():
             running = False
 
-    print("Exporting video...")
-    video.export()
     pygame.quit()
 
 
