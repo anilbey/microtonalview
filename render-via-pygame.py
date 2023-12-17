@@ -54,7 +54,7 @@ def main():
     max_loudness = data["loudness"].max()
 
     # Define padding as a percentage of the height
-    padding_percent = 0.25  # 10% padding at the bottom
+    padding_percent = 0.30  # 30% padding at the bottom
     padding_bottom = int(height * padding_percent)
 
     # Adjust scale_y to fit within the screen, considering padding
