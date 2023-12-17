@@ -22,7 +22,8 @@ def blend_color(base_color, confidence):
 
 def loudness_to_size(loudness, min_loudness, max_loudness):
     normalized_loudness = (loudness - min_loudness) / (max_loudness - min_loudness)
-    return max(1, int(normalized_loudness * 10))  # Scale and ensure minimum size of 1
+    res = max(1, int(normalized_loudness * 10))  # Scale and ensure minimum size of 1
+    return res * 3  # Scale up to make circles bigger
 
 
 def main():
