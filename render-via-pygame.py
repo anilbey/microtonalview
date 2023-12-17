@@ -26,7 +26,7 @@ def loudness_to_size(loudness, min_loudness, max_loudness):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Real-Time Pitch Visualization")
+    parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
 
     # Add the arguments
     parser.add_argument("name", metavar="name", type=str, help="the name of the song")
@@ -39,7 +39,7 @@ def main():
     pygame.font.init()
     width, height = 1920, 1080
     screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
-    pygame.display.set_caption("Real-Time Pitch Visualization")
+    pygame.display.set_caption("Microtonal Pitch Visualisation")
 
     # Use Polars to load data
     data = pl.read_csv(f"{args.name}-loudness.csv")
