@@ -150,7 +150,7 @@ def main():
     max_loudness = data["loudness"].max()
 
     # Define padding as a percentage of the height
-    padding_percent = 0.25  # 25% padding at the bottom
+    padding_percent = 0.05  # 5% padding at the bottom
     padding_bottom = int(height * padding_percent)
 
     # Adjust scale_y to fit within the screen, considering padding
@@ -214,7 +214,7 @@ def main():
         screen.blit(fps_text, (10, 10))
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(45)  # desired FPS
 
         # Check if music is still playing
         if not pygame.mixer.music.get_busy():
