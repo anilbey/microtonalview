@@ -17,7 +17,7 @@ def record_script(script, args, output_filename):
         '-video_size', f"{1920}x{1020}",  # Use actual window size
         '-i', f":0.0+{0},{0}",  # Use actual window position
         '-f', 'pulse', '-ac', '2', 
-        '-i', 'alsa_output.usb-Focusrite_Scarlett_2i2_USB-00.analog-stereo.2.monitor',  # Specified audio source
+        '-i', 'alsa_output.pci-0000_00_1f.3.analog-stereo.monitor', # 'alsa_output.usb-Focusrite_Scarlett_2i2_USB-00.analog-stereo.2.monitor',  # Specified audio source
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
         output_filename
     ]
