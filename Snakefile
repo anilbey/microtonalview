@@ -1,5 +1,8 @@
 # Define the base name for your files
-BASE_NAME = "aka-saba-taksim"
+base_name = "neyzen-tevfik-hüseyni-taksimi"
+BASE_DIR = "input"
+BASE_NAME = f"{BASE_DIR}/{base_name}"
+
 
 rule all:
     input:
