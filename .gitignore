@@ -1,3 +1,8 @@
 .snakemake
 input
 __pycache__
+
+
+# Added by cargo
+
+/target
