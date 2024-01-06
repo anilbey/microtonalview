@@ -1,6 +1,6 @@
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, DiagnosticsStore},
-    prelude::*, core_pipeline::clear_color::ClearColorConfig,
+    prelude::*,
 };
 
 #[derive(Component)]
@@ -21,8 +21,7 @@ impl Plugin for HelloPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
             .add_systems(Startup, add_camera)
-            .add_systems(Startup, add_people)
-            .add_systems(Update, greet_people);
+            .add_systems(Startup, add_people);
     }
 }
 
@@ -48,16 +47,6 @@ fn add_people(mut commands: Commands, asset_server: Res<AssetServer>) {
     .insert(FpsText);
 }
 
-fn greet_people(
-    time: Res<Time>, 
-    mut timer: ResMut<GreetTimer>, 
-    query: Query<&Name, With<Person>>) {
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in query.iter() {
-            println!("hello {}!", name.0);
-        }
-    }
-}
 
 fn update_fps(
     diagnostics: Res<DiagnosticsStore>,
