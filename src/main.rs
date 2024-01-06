@@ -20,8 +20,10 @@ pub struct HelloPlugin;
 impl Plugin for HelloPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
+            .add_plugins(FrameTimeDiagnosticsPlugin::default())
             .add_systems(Startup, add_camera)
-            .add_systems(Startup, add_people);
+            .add_systems(Startup, add_people)
+            .add_systems(Update, update_fps);
     }
 }
 
@@ -64,9 +66,7 @@ fn update_fps(
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(0.9, 0.3, 0.6)))
+        .insert_resource(ClearColor(Color::rgb(0.4, 0.6, 0.6)))
         .add_plugins((DefaultPlugins, HelloPlugin))
-        .add_plugins(FrameTimeDiagnosticsPlugin::default())
-        .add_systems(Update, update_fps)
         .run();
 }
