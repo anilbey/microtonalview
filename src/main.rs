@@ -15,9 +15,9 @@ struct GreetTimer(Timer);
 #[derive(Component)]
 struct FpsText;
 
-pub struct HelloPlugin;
+pub struct FPSPlugin;
 
-impl Plugin for HelloPlugin {
+impl Plugin for FPSPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
             .add_plugins(FrameTimeDiagnosticsPlugin::default())
@@ -67,6 +67,6 @@ fn update_fps(
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.4, 0.6, 0.6)))
-        .add_plugins((DefaultPlugins, HelloPlugin))
+        .add_plugins((DefaultPlugins, FPSPlugin))
         .run();
 }
