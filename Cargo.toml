@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.12.1", features = ["dynamic_linking"] }
+bevy_kira_audio = { version = "0.18.0", features = ["wav"] }
+
 bevy_prototype_lyon = "0.10.0"
 polars = "0.36.2"
 

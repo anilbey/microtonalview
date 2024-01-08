@@ -1,6 +1,8 @@
 mod fps;
 use std::env;
 
+use bevy_kira_audio::{Audio, AudioControl, AudioPlugin};
+
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use fps::FPSPlugin;
@@ -15,6 +17,11 @@ struct AudioAnalysisData {
     max_frequency: f64,
     min_loudness: f64,
     max_loudness: f64,
+}
+
+#[derive(Resource)]
+struct AudioFile {
+    path: String,
 }
 
 fn add_camera(mut commands: Commands) {
@@ -42,6 +49,11 @@ fn add_line(mut commands: Commands) {
     ));
 }
 
+fn play_audio(audio: Res<Audio>, asset_server: Res<AssetServer>, audio_file: Res<AudioFile>) {
+    let audio_handle = asset_server.load(&audio_file.path);
+    audio.play(audio_handle);
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
@@ -49,7 +61,7 @@ fn main() {
         return;
     }
     let features_path = &args[1];
-    let audio_path = &args[2];
+    let audio_path = args[2].clone();
 
     // Read CSV file using Polars
     let df = CsvReader::from_path(features_path)
@@ -82,9 +94,14 @@ fn main() {
             min_loudness,
             max_loudness,
         })
+        .insert_resource(AudioFile {
+            path: audio_path.to_string(),
+        })
         .add_systems(Startup, add_camera)
         .add_plugins((DefaultPlugins, FPSPlugin))
+        .add_plugins(AudioPlugin)
         .add_plugins(ShapePlugin)
         .add_systems(Startup, add_line)
+        .add_systems(Startup, play_audio)
         .run();
 }
