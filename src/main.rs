@@ -1,10 +1,9 @@
+mod audio_player;
 mod fps;
+use std::env;
 use std::path::Path;
-use std::{env, time::Duration};
 
-use bevy::app::AppExit;
-use bevy_kira_audio::{Audio, AudioControl, AudioPlugin};
-
+use audio_player::{AudioFile, AudioPlayerPlugin};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use fps::FPSPlugin;
@@ -27,15 +26,6 @@ struct AudioAnalysisData {
     min_loudness: f64,
     max_loudness: f64,
 }
-
-#[derive(Resource)]
-struct AudioFile {
-    path: String,
-    duration: f32,
-}
-
-#[derive(Resource)]
-struct AudioTimer(Timer);
 
 fn add_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
@@ -60,31 +50,6 @@ fn add_line(mut commands: Commands) {
             1.0,
         ),
     ));
-}
-
-fn play_audio(
-    audio: Res<Audio>,
-    asset_server: Res<AssetServer>,
-    audio_file: Res<AudioFile>,
-    mut timer: ResMut<AudioTimer>,
-) {
-    let audio_handle = asset_server.load(&audio_file.path);
-    audio.play(audio_handle);
-    timer
-        .0
-        .set_duration(Duration::from_secs_f32(audio_file.duration));
-    timer.0.reset();
-}
-
-// check the timer to exit the app
-fn check_audio_timer(
-    time: Res<Time>,
-    mut timer: ResMut<AudioTimer>,
-    mut app_exit_events: EventWriter<AppExit>,
-) {
-    if timer.0.tick(time.delta()).just_finished() {
-        app_exit_events.send(AppExit);
-    }
 }
 
 fn main() {
@@ -140,13 +105,9 @@ fn main() {
             path: audio_path.to_string(),
             duration: duration,
         })
-        .insert_resource(AudioTimer(Timer::from_seconds(0.0, TimerMode::Once)))
         .add_systems(Startup, add_camera)
-        .add_plugins((DefaultPlugins, FPSPlugin))
-        .add_plugins(AudioPlugin)
+        .add_plugins((DefaultPlugins, FPSPlugin, AudioPlayerPlugin))
         .add_plugins(ShapePlugin)
         .add_systems(Startup, add_line)
-        .add_systems(Startup, play_audio)
-        .add_systems(Update, check_audio_timer)
         .run();
 }
