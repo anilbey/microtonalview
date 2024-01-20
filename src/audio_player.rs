@@ -6,7 +6,7 @@ use bevy_kira_audio::{Audio, AudioControl, AudioPlugin};
 pub struct AudioPlayerPlugin;
 
 #[derive(Resource)]
-struct AudioTimer(Timer);
+pub struct AudioTimer(pub Timer, pub f32); // f64 to store the last process time
 
 #[derive(Resource)]
 pub struct AudioFile {
@@ -17,7 +17,7 @@ pub struct AudioFile {
 impl Plugin for AudioPlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AudioPlugin)
-            .insert_resource(AudioTimer(Timer::from_seconds(0.0, TimerMode::Once)))
+            .insert_resource(AudioTimer(Timer::from_seconds(0.0, TimerMode::Once), 0.0))
             .add_systems(Startup, play_audio)
             .add_systems(Update, check_audio_timer);
     }
