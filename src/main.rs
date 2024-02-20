@@ -76,10 +76,6 @@ fn filter_data_system(
     query: Query<Entity, With<Marker>>,
 ) {
     let current_time = audio_timer.0.elapsed_secs();
-    // Check if 0.1 seconds have passed since the last process
-    if current_time - audio_timer.1 < 0.1 {
-        return;
-    }
 
     for entity in query.iter() {
         commands.entity(entity).despawn();
