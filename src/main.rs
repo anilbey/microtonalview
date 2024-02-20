@@ -5,7 +5,6 @@ use std::path::Path;
 
 use audio_player::{AudioFile, AudioPlayerPlugin, AudioTimer};
 use bevy::{
-    audio,
     prelude::*,
     window::{PresentMode, WindowTheme},
 };
