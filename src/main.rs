@@ -23,7 +23,6 @@ fn get_wav_duration<P: AsRef<Path>>(file_path: P) -> Result<f32, hound::Error> {
     Ok(duration)
 }
 
-
 #[derive(Resource)]
 struct DataFrameResource(DataFrame);
 
@@ -34,6 +33,9 @@ struct AudioAnalysisData {
     min_loudness: f32,
     max_loudness: f32,
 }
+
+#[derive(Component)]
+struct Marker;
 
 fn add_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
@@ -71,12 +73,18 @@ fn filter_data_system(
     mut audio_timer: ResMut<AudioTimer>,
     data_frame_resource: Res<DataFrameResource>,
     audio_analysis_data: Res<AudioAnalysisData>,
+    query: Query<Entity, With<Marker>>,
 ) {
     let current_time = audio_timer.0.elapsed_secs();
     // Check if 0.1 seconds have passed since the last process
     if current_time - audio_timer.1 < 0.1 {
         return;
     }
+
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
+    }
+
     // Update the last process time
     audio_timer.1 = current_time;
 
@@ -90,9 +98,8 @@ fn filter_data_system(
         .into_iter()
         .map(|opt_t| {
             opt_t.map_or(false, |t| {
-                let t_f32 = t as f32;  
+                let t_f32 = t as f32;
                 t_f32 >= (current_time - 2.5) as f32 && t_f32 <= (current_time + 2.5) as f32
-    
             })
         })
         .collect();
@@ -167,6 +174,7 @@ fn filter_data_system(
                 },
                 1.0,
             ),
+            Marker,
         ));
     }
 }
