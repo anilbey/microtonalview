@@ -42,7 +42,7 @@ fn add_camera(mut commands: Commands) {
 }
 
 fn add_line(mut commands: Commands) {
-    let line = shapes::Line(Vec2::new(0.0, -400.0), Vec2::new(0.0, 400.0)); // Adjust length as needed
+    let line = shapes::Line(Vec2::new(0.0, -500.0), Vec2::new(0.0, 500.0)); // Adjust length as needed
 
     commands.spawn((
         ShapeBundle {
@@ -144,7 +144,7 @@ fn filter_data_system(
         let mut x = (time - current_time + 2.5) * scale_x;
         let mut y = (height - padding_bottom) - (frequency - min_frequency) * scale_y;
         y = y - 800.0;
-        x = x - 1500.0;
+        x = x - width / 2.0;
         // pprint y
         println!("y is coming......");
         print!("{} ", y);
