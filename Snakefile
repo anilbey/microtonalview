@@ -37,5 +37,5 @@ rule run_render_via_pygame:
         script="render-via-pygame.py",
         loudness_csv=BASE_NAME + "-loudness.csv",
         audio=BASE_NAME + ".wav"
-    run:
-        shell("python {input.script} {input.loudness_csv} {input.audio}")
+    shell:
+        "python {input.script} {input.loudness_csv} {input.audio}"
