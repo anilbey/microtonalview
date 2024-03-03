@@ -62,7 +62,7 @@ def get_top_k_frequency_bins(data, bin_size, k):
 
 
 @lru_cache(maxsize=1)
-def get_note_mapping() -> dict[str, float]:
+def get_note_mapping() -> dict[float, str]:
     """Get the note mapping for frequencies."""
     notes = ["C#2/Db2", "D2", "D#2/Eb2", "E2", "F2", "F#2/Gb2", "G2", "G#2/Ab2", "A2", "A#2/Bb2", "B2",
              "C3", "C#3/Db3", "D3", "D#3/Eb3", "E3", "F3", "F#3/Gb3", "G3", "G#3/Ab3", "A3", "A#3/Bb3", "B3",
