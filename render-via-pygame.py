@@ -134,6 +134,7 @@ def main():
     pygame.font.init()
     width, height = 1920, 1080
     screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
+    screen.fill((255, 255, 255))  # white
     pygame.display.set_caption("Microtonal Pitch Visualisation")
 
     # Use Polars to load data from the features CSV file
@@ -158,6 +159,17 @@ def main():
     scale_y = (height - padding_bottom) / (max_frequency - min_frequency)
     scale_x = width / 5
 
+    # Create a surface for static elements
+    static_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    pygame.draw.line(
+        static_elements_surface, (255, 153, 51), (width // 2, 0), (width // 2, height), 1
+    )
+    draw_frequency_lines(static_elements_surface, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom)
+
+    # Create a separate surface for dynamic elements (circles)
+    dynamic_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+
+
     font = pygame.font.SysFont(None, 36)
     pygame.mixer.music.play()
 
@@ -175,7 +187,8 @@ def main():
             (data["time"] >= current_time - 2.5) & (data["time"] <= current_time + 2.5)
         )
 
-        screen.fill((255, 255, 255))
+        # Clear the dynamic elements surface each frame
+        dynamic_elements_surface.fill((255, 255, 255))
 
         for row in relevant_data.iter_rows(named=True):
             x = (row["time"] - current_time + 2.5) * scale_x
@@ -201,15 +214,13 @@ def main():
             pygame.draw.circle(
                 circle_surface, color, (circle_size, circle_size), circle_size
             )
-            screen.blit(circle_surface, (int(x) - circle_size, int(y) - circle_size))
+            dynamic_elements_surface.blit(circle_surface, (int(x) - circle_size, int(y) - circle_size))
 
-        # Draw lines and text for top k frequencies
-        # This is done after drawing the circles to ensure text is on top
-        draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom)
+        # Draw the updated dynamic elements over the static ones
+        screen.blit(dynamic_elements_surface, (0, 0))
+        # Draw the static elements to the screen
+        screen.blit(static_elements_surface, (0, 0))
 
-        pygame.draw.line(
-            screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 1
-        )
         fps = clock.get_fps()
         fps_text = font.render(f"{fps:.2f} FPS", True, (0, 0, 0))
         screen.blit(fps_text, (10, 10))
