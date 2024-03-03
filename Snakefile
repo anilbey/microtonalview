@@ -1,12 +1,8 @@
 # Define the base name for your files
-base_name = "neyzen-tevfik-hüseyni-taksimi"
+base_name = "aka-saba-taksim"
 BASE_DIR = "input"
 BASE_NAME = f"{BASE_DIR}/{base_name}"
 
-
-rule all:
-    input:
-        BASE_NAME + ".mp4"
 
 rule crepe:
     input:
@@ -34,3 +30,12 @@ rule record_cli:
         mp4=BASE_NAME + ".mp4"
     shell:
         "python record_cli.py {input.script} {output.mp4} {input.args} {input.audio}"
+
+
+rule run_render_via_pygame:
+    input:
+        script="render-via-pygame.py",
+        loudness_csv=BASE_NAME + "-loudness.csv",
+        audio=BASE_NAME + ".wav"
+    run:
+        shell("python {input.script} {input.loudness_csv} {input.audio}")
