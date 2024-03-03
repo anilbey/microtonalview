@@ -61,8 +61,8 @@ def get_top_k_frequency_bins(data, bin_size, k):
     return top_k_freq_bins
 
 
-def get_note_mapping():
-    # Mapping of note names to frequencies
+def get_note_mapping() -> dict[str, float]:
+    """Get the note mapping for frequencies."""
     notes = ["C#2/Db2", "D2", "D#2/Eb2", "E2", "F2", "F#2/Gb2", "G2", "G#2/Ab2", "A2", "A#2/Bb2", "B2",
              "C3", "C#3/Db3", "D3", "D#3/Eb3", "E3", "F3", "F#3/Gb3", "G3", "G#3/Ab3", "A3", "A#3/Bb3", "B3",
              "C4", "C#4/Db4", "D4", "D#4/Eb4", "E4", "F4", "F#4/Gb4", "G4", "G#4/Ab4", "A4", "A#4/Bb4", "B4",
@@ -76,8 +76,9 @@ def get_note_mapping():
     return dict(zip(frequencies, notes))
 
 
-def find_closest_note(freq, note_mapping):
-    # Find the closest note for the given frequency
+def find_closest_note(freq: float) -> str:
+    """Find the closest note for the given frequency."""
+    note_mapping = get_note_mapping()
     closest_freq = min(note_mapping.keys(), key=lambda k: abs(k - freq))
     return note_mapping[closest_freq]
 
@@ -95,7 +96,7 @@ def draw_text_with_outline(screen, font, text, x, y, main_color, outline_color, 
     screen.blit(text_surf, (x, y))
 
 
-def draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom, note_mapping):
+def draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom):
     scale_y = (height - padding_bottom) / (max_frequency - min_frequency)
     font = pygame.font.SysFont(None, 24)
     main_color = (0, 0, 0)           # Black text
@@ -104,7 +105,7 @@ def draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_fre
 
     for row in top_k_freq_bins.iter_rows(named=True):
         avg_freq = (float(row["Frequency Range"].split('-')[0]) + float(row["Frequency Range"].split('-')[1])) / 2
-        closest_note = find_closest_note(avg_freq, note_mapping)
+        closest_note = find_closest_note(avg_freq)
         y = (height - padding_bottom) - (avg_freq - min_frequency) * scale_y
 
         # Draw line
@@ -137,7 +138,6 @@ def main():
     # Use Polars to load data from the features CSV file
     data = pl.read_csv(args.features)
 
-    note_mapping = get_note_mapping()
     top_k_freq_bins = get_top_k_frequency_bins(data, bin_size=30, k=10)
     # Load the audio file
     audio_file = args.audio
@@ -204,7 +204,7 @@ def main():
 
         # Draw lines and text for top k frequencies
         # This is done after drawing the circles to ensure text is on top
-        draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom, note_mapping)
+        draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom)
 
         pygame.draw.line(
             screen, (255, 153, 51), (width // 2, 0), (width // 2, height), 1
