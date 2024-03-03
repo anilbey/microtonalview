@@ -1,5 +1,6 @@
 import argparse
 import colorsys
+from functools import lru_cache
 import numpy as np
 import pygame
 import polars as pl
@@ -22,7 +23,6 @@ def frequency_to_color(frequency, min_freq, max_freq):
     rgb = colorsys.hsv_to_rgb(hue, saturation, value)
     # Scale RGB values to 0-255 range
     return tuple(int(i * 255) for i in rgb)
-
 
 
 def blend_color(base_color, confidence):
@@ -61,6 +61,7 @@ def get_top_k_frequency_bins(data, bin_size, k):
     return top_k_freq_bins
 
 
+@lru_cache(maxsize=1)
 def get_note_mapping() -> dict[str, float]:
     """Get the note mapping for frequencies."""
     notes = ["C#2/Db2", "D2", "D#2/Eb2", "E2", "F2", "F#2/Gb2", "G2", "G#2/Ab2", "A2", "A#2/Bb2", "B2",
