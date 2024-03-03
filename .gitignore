@@ -1,3 +1,5 @@
 .snakemake
 input
 __pycache__
+target
+assets
