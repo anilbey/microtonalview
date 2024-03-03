@@ -25,7 +25,7 @@ rule append_loudness:
 
 rule record_cli:
     input:
-        script="render-via-pygame.py",
+        script="visualiser/view.py",
         args=BASE_NAME + "-loudness.csv",  # loudness CSV file used as input to render-via-pygame.py
         audio=BASE_NAME + ".wav",  # Path to the .wav file
     output:
@@ -36,19 +36,8 @@ rule record_cli:
 
 rule run_render_via_pygame:
     input:
-        script="render-via-pygame.py",
+        script="visualiser/view.py",
         loudness_csv=BASE_NAME + "-loudness.csv",
         audio=BASE_NAME + ".wav",
     shell:
         "python {input.script} {input.loudness_csv} {input.audio}"
-
-
-rule profile_render_via_pygame:
-    input:
-        script="render-via-pygame.py",
-        loudness_csv=BASE_NAME + "-loudness.csv",
-        audio=BASE_NAME + ".wav",
-    output:
-        "after-cprofile-render-via-pygame.out",
-    shell:
-        "python -m cProfile -o {output} {input.script} {input.loudness_csv} {input.audio}"

@@ -1,13 +1,13 @@
 import argparse
 import colorsys
-from functools import lru_cache
 import numpy as np
 import pygame
 import polars as pl
 
+from porte import draw_frequency_lines
 
-# Custom function to map frequency to color
-def frequency_to_color(frequency, min_freq, max_freq):
+def frequency_to_color(frequency: float, min_freq: float, max_freq: float) -> tuple[float, float, float]:
+    """Mapping frequency to colour."""
     # Normalize frequency value
     normalized_value = (frequency - min_freq) / (max_freq - min_freq)
     # Apply a non-linear transformation to make changes more sensitive
@@ -22,16 +22,17 @@ def frequency_to_color(frequency, min_freq, max_freq):
     # Convert HSV to RGB
     rgb = colorsys.hsv_to_rgb(hue, saturation, value)
     # Scale RGB values to 0-255 range
-    return tuple(int(i * 255) for i in rgb)
+    return rgb[0] * 255, rgb[1] * 255, rgb[2] * 255
 
 
-def blend_color(base_color, confidence):
-    # Apply alpha based on confidence to the base color
+def blend_color(base_color: tuple[float, float, float], confidence: float) -> tuple[float, float, float, float]:
+    """Apply alpha based on confidence to the base color."""
     alpha = int(255 * confidence)
     return base_color + (alpha,)
 
 
-def loudness_to_size(loudness, min_loudness, max_loudness):
+def loudness_to_size(loudness: float, min_loudness: float, max_loudness: float) -> float:
+    """Mapping loudness to circle size."""
     normalized_loudness = (loudness - min_loudness) / (max_loudness - min_loudness)
     res = max(1, int(normalized_loudness * 10))  # Scale and ensure minimum size of 1
     return res * 2.5  # Scale up to make circles bigger
@@ -59,61 +60,6 @@ def get_top_k_frequency_bins(data, bin_size, k):
     # Get top k frequency bins
     top_k_freq_bins = freq_df.top_k(k, by="Count")
     return top_k_freq_bins
-
-
-@lru_cache(maxsize=1)
-def get_note_mapping() -> dict[float, str]:
-    """Get the note mapping for frequencies."""
-    notes = ["C#2/Db2", "D2", "D#2/Eb2", "E2", "F2", "F#2/Gb2", "G2", "G#2/Ab2", "A2", "A#2/Bb2", "B2",
-             "C3", "C#3/Db3", "D3", "D#3/Eb3", "E3", "F3", "F#3/Gb3", "G3", "G#3/Ab3", "A3", "A#3/Bb3", "B3",
-             "C4", "C#4/Db4", "D4", "D#4/Eb4", "E4", "F4", "F#4/Gb4", "G4", "G#4/Ab4", "A4", "A#4/Bb4", "B4",
-             "C5", "C#5/Db5", "D5", "D#5/Eb5", "E5", "F5", "F#5/Gb5", "G5", "G#5/Ab5", "A5", "A#5/Bb5", "B5",
-             "C6", "C#6/Db6", "D6"]
-    frequencies = [69.30, 73.42, 77.78, 82.41, 87.31, 92.50, 98.00, 103.83, 110.00, 116.54, 123.47,
-                   130.81, 138.59, 146.83, 155.56, 164.81, 174.61, 185.00, 196.00, 207.65, 220.00, 233.08, 246.94,
-                   261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88,
-                   523.25, 554.37, 587.33, 622.25, 659.25, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77,
-                   1046.50, 1108.73, 1174.66]
-    return dict(zip(frequencies, notes))
-
-
-def find_closest_note(freq: float) -> str:
-    """Find the closest note for the given frequency."""
-    note_mapping = get_note_mapping()
-    closest_freq = min(note_mapping.keys(), key=lambda k: abs(k - freq))
-    return note_mapping[closest_freq]
-
-
-def draw_text_with_outline(screen, font, text, x, y, main_color, outline_color, outline_width):
-    # Render the outline
-    outline_surf = font.render(text, True, outline_color)
-    for dx in range(-outline_width, outline_width + 1):
-        for dy in range(-outline_width, outline_width + 1):
-            if dx != 0 or dy != 0:  # Offset for the outline
-                screen.blit(outline_surf, (x + dx, y + dy))
-
-    # Render the main text on top
-    text_surf = font.render(text, True, main_color)
-    screen.blit(text_surf, (x, y))
-
-
-def draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom):
-    scale_y = (height - padding_bottom) / (max_frequency - min_frequency)
-    font = pygame.font.SysFont(None, 24)
-    main_color = (0, 0, 0)           # Black text
-    outline_color = (252, 251, 237)  # White outline
-    outline_width = 4
-
-    for row in top_k_freq_bins.iter_rows(named=True):
-        avg_freq = (float(row["Frequency Range"].split('-')[0]) + float(row["Frequency Range"].split('-')[1])) / 2
-        closest_note = find_closest_note(avg_freq)
-        y = (height - padding_bottom) - (avg_freq - min_frequency) * scale_y
-
-        # Draw line
-        pygame.draw.line(screen, (178, 162, 167), (0, y), (screen.get_width(), y), 1)
-
-        # Draw text with outline
-        draw_text_with_outline(screen, font, closest_note, 5, int(y) - 15, main_color, outline_color, outline_width)
 
 
 def main():
@@ -200,8 +146,7 @@ def main():
             )  # Adjust the threshold as needed
 
             if is_current_circle:
-                # Make the current circle red
-                color = (255, 0, 0)
+                color = (255, 0, 0)  # current circle red
             else:
                 base_color = frequency_to_color(
                     row["frequency"], min_frequency, max_frequency

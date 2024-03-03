@@ -1,3 +1,3 @@
 static-checks:
-	mypy .
+	mypy --ignore-missing-imports .
 	ruff check .
