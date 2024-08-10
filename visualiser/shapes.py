@@ -1,5 +1,5 @@
 """Shape objects."""
-from color import RGBA, blend_color, frequency_to_color
+from color import RGBA, Color, blend_color, frequency_to_color
 
 class Circle:
     def __init__(self, time: float, frequency: float, loudness: float, confidence: float):
@@ -20,7 +20,7 @@ class Circle:
 
     def compute_color(self, current_time: float, min_frequency: float, max_frequency: float) -> RGBA:
         if abs(self.time - current_time) < 0.01:
-            return RGBA(255, 0, 0, 255)  # current circle red
+            return Color.RED  # current circle red
         else:
             base_color = frequency_to_color(self.frequency, min_frequency, max_frequency)
             return blend_color(base_color, self.confidence)

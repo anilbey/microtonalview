@@ -18,6 +18,15 @@ class RGBA(NamedTuple):
     alpha: float
 
 
+class Color:
+    BLACK = RGBA(0, 0, 0, 255)
+    WHITE = RGBA(255, 255, 255, 255)
+    RED = RGBA(255, 0, 0, 255)
+    MID_LINE_SEPARATOR = RGBA(255, 153, 51, 255)
+    PORTE_OUTLINE = RGBA(252, 251, 237, 255)
+    PORTE_LINE = RGBA(178, 162, 167, 255)
+
+
 def frequency_to_color(frequency: float, min_freq: float, max_freq: float) -> RGB:
     """Mapping frequency to colour."""
     # Normalize frequency value

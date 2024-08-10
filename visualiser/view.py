@@ -5,6 +5,7 @@ import polars as pl
 from porte import draw_frequency_lines
 from dataframe_operations import get_top_k_frequency_bins
 from shapes import Circle
+from color import Color
 
 
 def main():
@@ -25,7 +26,7 @@ def main():
     pygame.font.init()
     width, height = 1920, 1080
     screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
-    screen.fill((255, 255, 255))  # white
+    screen.fill(Color.WHITE)
     pygame.display.set_caption("Microtonal Pitch Visualisation")
 
     # Use Polars to load data from the features CSV file
@@ -54,7 +55,7 @@ def main():
     # Create a surface for static elements
     static_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
     pygame.draw.line(
-        static_elements_surface, (255, 153, 51), (width // 2, 0), (width // 2, height), 1
+        static_elements_surface, Color.MID_LINE_SEPARATOR, (width // 2, 0), (width // 2, height), 1
     )
     top_k_freq_bins = get_top_k_frequency_bins(data, bin_size=30, k=10)
     draw_frequency_lines(static_elements_surface, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom)
@@ -81,7 +82,7 @@ def main():
         )
 
         # Clear the dynamic elements surface each frame
-        dynamic_elements_surface.fill((255, 255, 255))
+        dynamic_elements_surface.fill(Color.WHITE)
 
         for row in relevant_data.iter_rows(named=True):
             circle = Circle(
@@ -111,7 +112,7 @@ def main():
         screen.blit(static_elements_surface, (0, 0))
 
         fps = clock.get_fps()
-        fps_text = font.render(f"{fps:.2f} FPS", True, (0, 0, 0))
+        fps_text = font.render(f"{fps:.2f} FPS", True, Color.BLACK)
         screen.blit(fps_text, (10, 10))
 
         pygame.display.flip()
