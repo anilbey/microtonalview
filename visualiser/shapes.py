@@ -25,8 +25,6 @@ class Circle:
             base_color = frequency_to_color(self.frequency, min_frequency, max_frequency)
             return blend_color(base_color, self.confidence)
 
-    def should_draw(self) -> bool:
-        return self.confidence >= 0.5
 
 def loudness_to_size(loudness: float, min_loudness: float, max_loudness: float) -> float:
     """Mapping loudness to circle size."""

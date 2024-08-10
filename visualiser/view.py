@@ -30,6 +30,8 @@ def main():
 
     # Use Polars to load data from the features CSV file
     data = pl.read_csv(args.features)
+    # remove rows with confidence less than 0.5
+    data = data.filter(data["confidence"] > 0.5)
 
     # Load the audio file
     audio_file = args.audio
@@ -88,9 +90,6 @@ def main():
                 loudness=row["loudness"],
                 confidence=row["confidence"]
             )
-
-            if not circle.should_draw():
-                continue
 
             x = circle.compute_x_coordinate(current_time, scale_x)
             y = circle.compute_y_coordinate(scale_y, min_frequency, height, padding_bottom)
