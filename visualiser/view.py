@@ -38,7 +38,6 @@ def main():
     # Use Polars to load data from the features CSV file
     data = pl.read_csv(args.features)
 
-    top_k_freq_bins = get_top_k_frequency_bins(data, bin_size=30, k=10)
     # Load the audio file
     audio_file = args.audio
     pygame.mixer.music.load(audio_file)
@@ -62,6 +61,7 @@ def main():
     pygame.draw.line(
         static_elements_surface, (255, 153, 51), (width // 2, 0), (width // 2, height), 1
     )
+    top_k_freq_bins = get_top_k_frequency_bins(data, bin_size=30, k=10)
     draw_frequency_lines(static_elements_surface, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom)
 
     # Create a separate surface for dynamic elements (circles)
