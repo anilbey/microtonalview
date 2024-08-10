@@ -62,14 +62,6 @@ def main():
     # Use Polars to load data from the features CSV file
     data = pl.read_csv(args.features)
 
-    # Set confidence values less than 0.35 to 0
-    data = data.with_columns(
-        pl.when(pl.col("confidence") < 0.5)
-        .then(0)
-        .otherwise(pl.col("confidence"))
-        .alias("confidence")
-    )
-
     top_k_freq_bins = get_top_k_frequency_bins(data, bin_size=30, k=10)
     # Load the audio file
     audio_file = args.audio
@@ -124,6 +116,10 @@ def main():
             x = (row["time"] - current_time + 2.5) * scale_x
             y = (height - padding_bottom) - (row["frequency"] - min_frequency) * scale_y
             circle_size = loudness_to_size(row["loudness"], min_loudness, max_loudness)
+
+            # if confidence < 0.5, don't draw
+            if row["confidence"] < 0.5:
+                continue
 
             is_current_circle = (
                 abs(row["time"] - current_time) < 0.01
