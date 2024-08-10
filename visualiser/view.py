@@ -1,34 +1,10 @@
 import argparse
-import colorsys
 import pygame
 import polars as pl
 
 from porte import draw_frequency_lines
 from dataframe_operations import get_top_k_frequency_bins
-
-def frequency_to_color(frequency: float, min_freq: float, max_freq: float) -> tuple[float, float, float]:
-    """Mapping frequency to colour."""
-    # Normalize frequency value
-    normalized_value = (frequency - min_freq) / (max_freq - min_freq)
-    # Apply a non-linear transformation to make changes more sensitive
-    normalized_value = pow(normalized_value, 0.4)
-
-    # Use HSV color space for more vibrant colors
-    # Hue varies from 0 to 1, corresponding to the full range of colors
-    hue = normalized_value
-    saturation = 0.9  # High saturation for more vivid colors
-    value = 0.9       # High value for brightness
-
-    # Convert HSV to RGB
-    rgb = colorsys.hsv_to_rgb(hue, saturation, value)
-    # Scale RGB values to 0-255 range
-    return rgb[0] * 255, rgb[1] * 255, rgb[2] * 255
-
-
-def blend_color(base_color: tuple[float, float, float], confidence: float) -> tuple[float, float, float, float]:
-    """Apply alpha based on confidence to the base color."""
-    alpha = int(255 * confidence)
-    return base_color + (alpha,)
+from color import blend_color, frequency_to_color
 
 
 def loudness_to_size(loudness: float, min_loudness: float, max_loudness: float) -> float:
