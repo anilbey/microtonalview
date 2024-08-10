@@ -4,14 +4,7 @@ import polars as pl
 
 from porte import draw_frequency_lines
 from dataframe_operations import get_top_k_frequency_bins
-from color import blend_color, frequency_to_color
-
-
-def loudness_to_size(loudness: float, min_loudness: float, max_loudness: float) -> float:
-    """Mapping loudness to circle size."""
-    normalized_loudness = (loudness - min_loudness) / (max_loudness - min_loudness)
-    res = max(1, int(normalized_loudness * 10))  # Scale and ensure minimum size of 1
-    return res * 2.5  # Scale up to make circles bigger
+from shapes import Circle
 
 
 def main():
@@ -89,31 +82,27 @@ def main():
         dynamic_elements_surface.fill((255, 255, 255))
 
         for row in relevant_data.iter_rows(named=True):
-            x = (row["time"] - current_time + 2.5) * scale_x
-            y = (height - padding_bottom) - (row["frequency"] - min_frequency) * scale_y
-            circle_size = loudness_to_size(row["loudness"], min_loudness, max_loudness)
+            circle = Circle(
+                time=row["time"],
+                frequency=row["frequency"],
+                loudness=row["loudness"],
+                confidence=row["confidence"]
+            )
 
-            # if confidence < 0.5, don't draw
-            if row["confidence"] < 0.5:
+            if not circle.should_draw():
                 continue
 
-            is_current_circle = (
-                abs(row["time"] - current_time) < 0.01
-            )  # Adjust the threshold as needed
+            x = circle.compute_x_coordinate(current_time, scale_x)
+            y = circle.compute_y_coordinate(scale_y, min_frequency, height, padding_bottom)
+            circle_size = circle.compute_size(min_loudness, max_loudness)
+            color = circle.compute_color(current_time, min_frequency, max_frequency)
 
-            if is_current_circle:
-                color = (255, 0, 0)  # current circle red
-            else:
-                base_color = frequency_to_color(
-                    row["frequency"], min_frequency, max_frequency
-                )
-                color = blend_color(base_color, row["confidence"])
-
-            circle_surface = pygame.Surface(
-                (2 * circle_size, 2 * circle_size), pygame.SRCALPHA
-            )
+            circle_surface = pygame.Surface((2 * circle_size, 2 * circle_size), pygame.SRCALPHA)
             pygame.draw.circle(
-                circle_surface, color, (circle_size, circle_size), circle_size
+                circle_surface,
+                color,
+                (circle_size, circle_size),
+                circle_size
             )
             dynamic_elements_surface.blit(circle_surface, (int(x) - circle_size, int(y) - circle_size))
 
