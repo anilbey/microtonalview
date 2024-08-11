@@ -15,7 +15,7 @@ rule crepe:
 
 rule record_cli:
     input:
-        script="visualiser/main.py",
+        script="source/main.py",
         args=BASE_NAME + ".f0.csv",
         audio=BASE_NAME + ".wav",  # Path to the .wav file
     output:
@@ -26,7 +26,7 @@ rule record_cli:
 
 rule run_render_via_pygame:
     input:
-        script="visualiser/main.py",
+        script="source/main.py",
         loudness_csv=BASE_NAME + ".f0.csv",
         audio=BASE_NAME + ".wav",
     shell:
