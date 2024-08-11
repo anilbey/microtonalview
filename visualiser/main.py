@@ -1,4 +1,5 @@
 import argparse
+from contextlib import contextmanager
 import pygame
 import polars as pl
 
@@ -15,6 +16,27 @@ from view.shape import Circle
 from view.color import Color
 from event import handle_quit_event, is_music_playing
 from view.text_display import fps_textbox
+
+
+@contextmanager
+def loading_screen(screen: pygame.Surface, width: int, height: int, image_path: str):
+    """Display the loading image."""
+    loading_image = pygame.image.load(image_path)
+    screen.blit(
+        loading_image,
+        (
+            width // 2 - loading_image.get_width() // 2,
+            height // 2 - loading_image.get_height() // 2,
+        ),
+    )
+    pygame.display.flip()  # Update the display to show the loading image
+
+    try:
+        yield  # Control is returned to the main program for the duration of the context
+    finally:
+        # Clear the screen after loading is complete
+        screen.fill(Color.WHITE)
+        pygame.display.flip()
 
 
 def main():
@@ -37,17 +59,19 @@ def main():
     width, height = 1920, 1080
     screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
     screen.fill(Color.WHITE)
-    pygame.display.set_caption("Microtonal Pitch Visualisation")
+    pygame.display.set_caption("Microtonal View")
 
-    # Use Polars to load data from the features CSV file
-    pitch_data = pl.read_csv(args.features)
+    with loading_screen(screen, width, height, "microtonal-view.png"):
+        # Use Polars to load data from the features CSV file
+        pitch_data = pl.read_csv(args.features)
 
-    loudness = calculate_loudness(audio_file)
-    pitch_data = add_loudness(pitch_data, loudness)
-    # remove rows with confidence less than 0.5
-    pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
+        # Calculate loudness and update pitch data
+        loudness = calculate_loudness(audio_file)
+        pitch_data = add_loudness(pitch_data, loudness)
 
-    pygame.mixer.music.load(audio_file)
+        # Remove rows with confidence less than 0.5
+        pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
+        pygame.mixer.music.load(audio_file)
 
     min_frequency = pitch_data["frequency"].min()
     max_frequency = pitch_data["frequency"].max()
