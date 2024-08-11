@@ -3,7 +3,7 @@ import pygame
 import polars as pl
 
 from view.porte import draw_frequency_lines
-from dataframe_operations import compute_x_positions, compute_y_positions, filter_data_by_time_window, get_top_k_frequency_bins
+from dataframe_operations import compute_x_positions_lazy, compute_y_positions_lazy, filter_data_by_time_window_lazy, get_top_k_frequency_bins
 from view.shape import Circle
 from view.color import Color
 from event import handle_quit_event, is_music_playing
@@ -32,19 +32,19 @@ def main():
     pygame.display.set_caption("Microtonal Pitch Visualisation")
 
     # Use Polars to load data from the features CSV file
-    data = pl.read_csv(args.features)
+    pitch_data = pl.read_csv(args.features)
     # remove rows with confidence less than 0.5
-    data = data.filter(data["confidence"] > 0.5)
+    pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
 
     # Load the audio file
     audio_file = args.audio
     pygame.mixer.music.load(audio_file)
 
-    min_frequency = data["frequency"].min()
-    max_frequency = data["frequency"].max()
+    min_frequency = pitch_data["frequency"].min()
+    max_frequency = pitch_data["frequency"].max()
 
-    min_loudness = data["loudness"].min()
-    max_loudness = data["loudness"].max()
+    min_loudness = pitch_data["loudness"].min()
+    max_loudness = pitch_data["loudness"].max()
 
     # Define padding as a percentage of the height
     padding_percent = 0.15  # 15% padding at the bottom
@@ -59,7 +59,7 @@ def main():
     pygame.draw.line(
         static_elements_surface, Color.MID_LINE_SEPARATOR, (width // 2, 0), (width // 2, height), 1
     )
-    top_k_freq_bins = get_top_k_frequency_bins(data, bin_size=30, k=10)
+    top_k_freq_bins = get_top_k_frequency_bins(pitch_data, bin_size=30, k=10)
     draw_frequency_lines(static_elements_surface, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom)
 
     # Create a separate surface for dynamic elements (circles)
@@ -71,17 +71,16 @@ def main():
     clock = pygame.time.Clock()
 
     circle = Circle(0, 0, 0, 0)  # the drawing circle object
+    lazy_pitch_data = pitch_data.lazy()
     while running:
         running = handle_quit_event() and is_music_playing()
 
-        current_time = pygame.mixer.music.get_pos() / 1000.0
-        # Use Polars for data filtering
-        dataframe_window_to_display = filter_data_by_time_window(data, current_time)
-        # Compute x and y positions and add them to the relevant_data
-        dataframe_window_to_display = dataframe_window_to_display.with_columns([
-            compute_x_positions(dataframe_window_to_display, current_time, scale_x).alias("x"),
-            compute_y_positions(dataframe_window_to_display, height, padding_bottom, min_frequency, scale_y).alias("y")
+        # Get the window frame lazily
+        dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(lazy_pitch_data, current_time).with_columns([
+            compute_x_positions_lazy(current_time, scale_x).alias("x"),
+            compute_y_positions_lazy(height, padding_bottom, min_frequency, scale_y).alias("y")
         ])
+        dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
 
         # Clear the dynamic elements surface each frame
         dynamic_elements_surface.fill(Color.WHITE)
