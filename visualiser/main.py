@@ -2,10 +2,10 @@ import argparse
 import pygame
 import polars as pl
 
-from porte import draw_frequency_lines
+from view.porte import draw_frequency_lines
 from dataframe_operations import get_top_k_frequency_bins
-from shape import Circle
-from color import Color
+from view.shape import Circle
+from view.color import Color
 from event import handle_quit_event, is_music_playing
 
 

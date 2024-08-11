@@ -6,15 +6,15 @@ from pathlib import Path
 from types import MappingProxyType
 import pygame
 
-from color import RGBA, Color
+from .color import RGBA, Color
 
 
-script_dir = Path(__file__).parent.resolve()
+static_data_dir = Path(__file__).parent.parent / "static"
 
 @lru_cache(maxsize=1)
 def get_note_mapping() -> MappingProxyType[float, str]:
     """Get the note mapping for frequencies."""
-    with open(script_dir / "static" / "note_mapping.json") as f:
+    with open(static_data_dir / "note_mapping.json") as f:
         note_mapping = json.load(f)
     note_mapping = {float(k): v for k, v in note_mapping.items()}
     return MappingProxyType(note_mapping)

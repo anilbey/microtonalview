@@ -1,5 +1,5 @@
 """Shape objects."""
-from color import RGBA, Color, blend_color, frequency_to_color
+from .color import RGBA, Color, blend_color, frequency_to_color
 
 class Circle:
     def __init__(self, time: float, frequency: float, loudness: float, confidence: float):

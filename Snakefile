@@ -1,5 +1,5 @@
 # Define the base name for your files
-base_name = "aka-saba-taksim"
+base_name = "tunar-nihavend-taksim"
 BASE_DIR = "input"
 BASE_NAME = f"{BASE_DIR}/{base_name}"
 
@@ -25,7 +25,7 @@ rule append_loudness:
 
 rule record_cli:
     input:
-        script="visualiser/view.py",
+        script="visualiser/main.py",
         args=BASE_NAME + "-loudness.csv",  # loudness CSV file used as input to render-via-pygame.py
         audio=BASE_NAME + ".wav",  # Path to the .wav file
     output:
@@ -36,7 +36,7 @@ rule record_cli:
 
 rule run_render_via_pygame:
     input:
-        script="visualiser/view.py",
+        script="visualiser/main.py",
         loudness_csv=BASE_NAME + "-loudness.csv",
         audio=BASE_NAME + ".wav",
     shell:
