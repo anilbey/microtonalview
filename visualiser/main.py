@@ -64,8 +64,6 @@ def main():
     # Create a separate surface for dynamic elements (circles)
     dynamic_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
-
-    font = pygame.font.SysFont(None, 36)
     pygame.mixer.music.play()
 
     running = True
@@ -111,6 +109,7 @@ def main():
         screen.blit(static_elements_surface, (0, 0))
 
         fps = clock.get_fps()
+        font = pygame.font.SysFont(None, 36)
         fps_text = font.render(f"{fps:.2f} FPS", True, Color.BLACK)
         screen.blit(fps_text, (10, 10))
 
