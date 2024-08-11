@@ -1,5 +1,5 @@
 tensorflow>=2.15.0
-crepe>=0.0.14
+crepe>=0.0.15
 librosa>=0.10.1
 polars>=0.20.2
 numpy>=1.26.2
