@@ -6,12 +6,15 @@ from typing import NamedTuple
 
 class RGB(NamedTuple):
     """Red Green Blue color representation."""
+
     red: float
     green: float
     blue: float
 
+
 class RGBA(NamedTuple):
     """Red Green Blue Alpha color representation."""
+
     red: float
     green: float
     blue: float
@@ -38,7 +41,7 @@ def frequency_to_color(frequency: float, min_freq: float, max_freq: float) -> RG
     # Hue varies from 0 to 1, corresponding to the full range of colors
     hue = normalized_value
     saturation = 0.9  # High saturation for more vivid colors
-    value = 0.9       # High value for brightness
+    value = 0.9  # High value for brightness
 
     # Convert HSV to RGB
     rgb = colorsys.hsv_to_rgb(hue, saturation, value)

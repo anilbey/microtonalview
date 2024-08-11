@@ -3,7 +3,12 @@ import pygame
 import polars as pl
 
 from view.porte import draw_frequency_lines
-from dataframe_operations import compute_x_positions_lazy, compute_y_positions_lazy, filter_data_by_time_window_lazy, get_top_k_frequency_bins
+from dataframe_operations import (
+    compute_x_positions_lazy,
+    compute_y_positions_lazy,
+    filter_data_by_time_window_lazy,
+    get_top_k_frequency_bins,
+)
 from view.shape import Circle
 from view.color import Color
 from event import handle_quit_event, is_music_playing
@@ -20,7 +25,7 @@ def main():
     # Execute the parse_args() method
     args = parser.parse_args()
 
-    icon = pygame.image.load('logo.png')
+    icon = pygame.image.load("logo.png")
     pygame.display.set_icon(icon)
 
     pygame.init()
@@ -57,10 +62,21 @@ def main():
     # Create a surface for static elements
     static_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
     pygame.draw.line(
-        static_elements_surface, Color.MID_LINE_SEPARATOR, (width // 2, 0), (width // 2, height), 1
+        static_elements_surface,
+        Color.MID_LINE_SEPARATOR,
+        (width // 2, 0),
+        (width // 2, height),
+        1,
     )
     top_k_freq_bins = get_top_k_frequency_bins(pitch_data, bin_size=30, k=10)
-    draw_frequency_lines(static_elements_surface, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom)
+    draw_frequency_lines(
+        static_elements_surface,
+        top_k_freq_bins,
+        height,
+        min_frequency,
+        max_frequency,
+        padding_bottom,
+    )
 
     # Create a separate surface for dynamic elements (circles)
     dynamic_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
@@ -75,12 +91,20 @@ def main():
     while running:
         running = handle_quit_event() and is_music_playing()
 
-        current_time = pygame.mixer.music.get_pos() / 1000.0 - 0.2  # offset to start slightly earlier
+        current_time = (
+            pygame.mixer.music.get_pos() / 1000.0 - 0.2
+        )  # offset to start slightly earlier
         # Get the window frame lazily
-        dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(lazy_pitch_data, current_time).with_columns([
-            compute_x_positions_lazy(current_time, scale_x).alias("x"),
-            compute_y_positions_lazy(height, padding_bottom, min_frequency, scale_y).alias("y")
-        ])
+        dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(
+            lazy_pitch_data, current_time
+        ).with_columns(
+            [
+                compute_x_positions_lazy(current_time, scale_x).alias("x"),
+                compute_y_positions_lazy(
+                    height, padding_bottom, min_frequency, scale_y
+                ).alias("y"),
+            ]
+        )
         dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
 
         # Clear the dynamic elements surface each frame
@@ -95,14 +119,16 @@ def main():
             circle_size = circle.compute_size(min_loudness, max_loudness)
             color = circle.compute_color(current_time, min_frequency, max_frequency)
 
-            circle_surface = pygame.Surface((2 * circle_size, 2 * circle_size), pygame.SRCALPHA)
-            pygame.draw.circle(
-                circle_surface,
-                color,
-                (circle_size, circle_size),
-                circle_size
+            circle_surface = pygame.Surface(
+                (2 * circle_size, 2 * circle_size), pygame.SRCALPHA
             )
-            dynamic_elements_surface.blit(circle_surface, (int(row["x"]) - circle_size, int(row["y"]) - circle_size))
+            pygame.draw.circle(
+                circle_surface, color, (circle_size, circle_size), circle_size
+            )
+            dynamic_elements_surface.blit(
+                circle_surface,
+                (int(row["x"]) - circle_size, int(row["y"]) - circle_size),
+            )
 
         # Draw the updated dynamic elements over the static ones
         screen.blit(dynamic_elements_surface, (0, 0))

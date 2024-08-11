@@ -11,6 +11,7 @@ from view.color import RGBA, Color
 
 static_data_dir = Path(__file__).parent.parent / "static"
 
+
 @lru_cache(maxsize=1)
 def get_note_mapping() -> MappingProxyType[float, str]:
     """Get the note mapping for frequencies."""
@@ -27,7 +28,9 @@ def find_closest_note(freq: float) -> str:
     return note_mapping[closest_freq]
 
 
-def draw_text_with_outline(screen, font, text, x, y, main_color: RGBA, outline_color: RGBA, outline_width):
+def draw_text_with_outline(
+    screen, font, text, x, y, main_color: RGBA, outline_color: RGBA, outline_width
+):
     # Render the outline
     outline_surf = font.render(text, True, outline_color)
     for dx in range(-outline_width, outline_width + 1):
@@ -40,13 +43,18 @@ def draw_text_with_outline(screen, font, text, x, y, main_color: RGBA, outline_c
     screen.blit(text_surf, (x, y))
 
 
-def draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom):
+def draw_frequency_lines(
+    screen, top_k_freq_bins, height, min_frequency, max_frequency, padding_bottom
+):
     scale_y = (height - padding_bottom) / (max_frequency - min_frequency)
     font = pygame.font.SysFont(None, 24)
     outline_width = 4
 
     for row in top_k_freq_bins.iter_rows(named=True):
-        avg_freq = (float(row["Frequency Range"].split('-')[0]) + float(row["Frequency Range"].split('-')[1])) / 2
+        avg_freq = (
+            float(row["Frequency Range"].split("-")[0])
+            + float(row["Frequency Range"].split("-")[1])
+        ) / 2
         closest_note = find_closest_note(avg_freq)
         y = (height - padding_bottom) - (avg_freq - min_frequency) * scale_y
 
@@ -54,4 +62,13 @@ def draw_frequency_lines(screen, top_k_freq_bins, height, min_frequency, max_fre
         pygame.draw.line(screen, Color.PORTE_LINE, (0, y), (screen.get_width(), y), 1)
 
         # Draw text with outline
-        draw_text_with_outline(screen, font, closest_note, 5, int(y) - 15, Color.BLACK, Color.PORTE_OUTLINE, outline_width)
+        draw_text_with_outline(
+            screen,
+            font,
+            closest_note,
+            5,
+            int(y) - 15,
+            Color.BLACK,
+            Color.PORTE_OUTLINE,
+            outline_width,
+        )
