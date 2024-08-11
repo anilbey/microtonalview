@@ -4,7 +4,7 @@ import polars as pl
 
 from porte import draw_frequency_lines
 from dataframe_operations import get_top_k_frequency_bins
-from shapes import Circle
+from shape import Circle
 from color import Color
 
 
