@@ -3,7 +3,7 @@ import pygame
 import polars as pl
 
 from view.porte import draw_frequency_lines
-from dataframe_operations import get_top_k_frequency_bins
+from dataframe_operations import compute_x_positions, compute_y_positions, filter_data_by_time_window, get_top_k_frequency_bins
 from view.shape import Circle
 from view.color import Color
 from event import handle_quit_event, is_music_playing
@@ -76,21 +76,22 @@ def main():
 
         current_time = pygame.mixer.music.get_pos() / 1000.0
         # Use Polars for data filtering
-        relevant_data = data.filter(
-            (data["time"] >= current_time - 2.5) & (data["time"] <= current_time + 2.5)
-        )
+        dataframe_window_to_display = filter_data_by_time_window(data, current_time)
+        # Compute x and y positions and add them to the relevant_data
+        dataframe_window_to_display = dataframe_window_to_display.with_columns([
+            compute_x_positions(dataframe_window_to_display, current_time, scale_x).alias("x"),
+            compute_y_positions(dataframe_window_to_display, height, padding_bottom, min_frequency, scale_y).alias("y")
+        ])
 
         # Clear the dynamic elements surface each frame
         dynamic_elements_surface.fill(Color.WHITE)
 
-        for row in relevant_data.iter_rows(named=True):
+        for row in dataframe_window_to_display.iter_rows(named=True):
             circle.time = row["time"]
             circle.frequency = row["frequency"]
             circle.loudness = row["loudness"]
             circle.confidence = row["confidence"]
 
-            x = circle.compute_x_coordinate(current_time, scale_x)
-            y = circle.compute_y_coordinate(scale_y, min_frequency, height, padding_bottom)
             circle_size = circle.compute_size(min_loudness, max_loudness)
             color = circle.compute_color(current_time, min_frequency, max_frequency)
 
@@ -101,7 +102,7 @@ def main():
                 (circle_size, circle_size),
                 circle_size
             )
-            dynamic_elements_surface.blit(circle_surface, (int(x) - circle_size, int(y) - circle_size))
+            dynamic_elements_surface.blit(circle_surface, (int(row["x"]) - circle_size, int(row["y"]) - circle_size))
 
         # Draw the updated dynamic elements over the static ones
         screen.blit(dynamic_elements_surface, (0, 0))

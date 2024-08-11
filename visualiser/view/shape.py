@@ -8,12 +8,6 @@ class Circle:
         self.loudness = loudness
         self.confidence = confidence
 
-    def compute_x_coordinate(self, current_time: float, scale_x: float) -> float:
-        return (self.time - current_time + 2.5) * scale_x
-
-    def compute_y_coordinate(self, scale_y: float, min_frequency: float, height: int, padding_bottom: int) -> float:
-        return (height - padding_bottom) - (self.frequency - min_frequency) * scale_y
-
     def compute_size(self, min_loudness: float, max_loudness: float):
         """Computes size using loudness."""
         return loudness_to_size(self.loudness, min_loudness, max_loudness)
