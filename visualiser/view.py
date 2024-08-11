@@ -6,6 +6,7 @@ from porte import draw_frequency_lines
 from dataframe_operations import get_top_k_frequency_bins
 from shape import Circle
 from color import Color
+from event import handle_quit_event
 
 
 def main():
@@ -71,9 +72,7 @@ def main():
     clock = pygame.time.Clock()
 
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        running = handle_quit_event()
 
         current_time = pygame.mixer.music.get_pos() / 1000.0
         # Use Polars for data filtering
