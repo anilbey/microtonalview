@@ -119,7 +119,7 @@ def main():
         running = handle_quit_event() and is_music_playing()
 
         current_time = (
-            pygame.mixer.music.get_pos() / 1000.0 - 0.2
+            pygame.mixer.music.get_pos() / 1000.0
         )  # offset to start slightly earlier
         # Get the window frame lazily
         dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(
