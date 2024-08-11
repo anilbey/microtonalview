@@ -2,8 +2,10 @@ import argparse
 import pygame
 import polars as pl
 
+from audio_features import calculate_loudness
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
+    add_loudness,
     compute_x_positions_lazy,
     compute_y_positions_lazy,
     filter_data_by_time_window_lazy,
@@ -24,7 +26,8 @@ def main():
 
     # Execute the parse_args() method
     args = parser.parse_args()
-
+    # Load the audio file
+    audio_file = args.audio
     icon = pygame.image.load("logo.png")
     pygame.display.set_icon(icon)
 
@@ -38,11 +41,12 @@ def main():
 
     # Use Polars to load data from the features CSV file
     pitch_data = pl.read_csv(args.features)
+
+    loudness = calculate_loudness(audio_file)
+    pitch_data = add_loudness(pitch_data, loudness)
     # remove rows with confidence less than 0.5
     pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
 
-    # Load the audio file
-    audio_file = args.audio
     pygame.mixer.music.load(audio_file)
 
     min_frequency = pitch_data["frequency"].min()
@@ -81,13 +85,12 @@ def main():
     # Create a separate surface for dynamic elements (circles)
     dynamic_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
-    pygame.mixer.music.play()
-
     running = True
     clock = pygame.time.Clock()
 
     circle = Circle(0, 0, 0, 0)  # the drawing circle object
     lazy_pitch_data = pitch_data.lazy()
+    pygame.mixer.music.play()
     while running:
         running = handle_quit_event() and is_music_playing()
 

@@ -28,6 +28,13 @@ def get_top_k_frequency_bins(data: pl.DataFrame, bin_size: int, k: int) -> pl.Da
     return top_k_freq_bins
 
 
+def add_loudness(data: pl.DataFrame, loudness: np.ndarray) -> pl.DataFrame:
+    """Add loudness data to the DataFrame."""
+    # Ensure loudness array is not longer than the DataFrame
+    loudness = loudness[: len(data)]
+    return data.with_columns(pl.Series("loudness", loudness))
+
+
 def filter_data_by_time_window_lazy(
     data: pl.LazyFrame, current_time: float, window_size: float = 2.5
 ) -> pl.LazyFrame:
