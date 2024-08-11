@@ -7,6 +7,7 @@ from dataframe_operations import get_top_k_frequency_bins
 from view.shape import Circle
 from view.color import Color
 from event import handle_quit_event, is_music_playing
+from view.text_display import fps_textbox
 
 
 def main():
@@ -108,10 +109,7 @@ def main():
         # Draw the static elements to the screen
         screen.blit(static_elements_surface, (0, 0))
 
-        fps = clock.get_fps()
-        font = pygame.font.SysFont(None, 36)
-        fps_text = font.render(f"{fps:.2f} FPS", True, Color.BLACK)
-        screen.blit(fps_text, (10, 10))
+        screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
 
         pygame.display.flip()
         clock.tick(60)  # desired FPS

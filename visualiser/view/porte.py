@@ -6,7 +6,7 @@ from pathlib import Path
 from types import MappingProxyType
 import pygame
 
-from .color import RGBA, Color
+from view.color import RGBA, Color
 
 
 static_data_dir = Path(__file__).parent.parent / "static"
