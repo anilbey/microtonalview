@@ -70,6 +70,7 @@ def main():
     running = True
     clock = pygame.time.Clock()
 
+    circle = Circle(0, 0, 0, 0)  # the drawing circle object
     while running:
         running = handle_quit_event() and is_music_playing()
 
@@ -83,12 +84,10 @@ def main():
         dynamic_elements_surface.fill(Color.WHITE)
 
         for row in relevant_data.iter_rows(named=True):
-            circle = Circle(
-                time=row["time"],
-                frequency=row["frequency"],
-                loudness=row["loudness"],
-                confidence=row["confidence"]
-            )
+            circle.time = row["time"]
+            circle.frequency = row["frequency"]
+            circle.loudness = row["loudness"]
+            circle.confidence = row["confidence"]
 
             x = circle.compute_x_coordinate(current_time, scale_x)
             y = circle.compute_y_coordinate(scale_y, min_frequency, height, padding_bottom)
