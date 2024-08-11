@@ -6,7 +6,7 @@ from porte import draw_frequency_lines
 from dataframe_operations import get_top_k_frequency_bins
 from shape import Circle
 from color import Color
-from event import handle_quit_event
+from event import handle_quit_event, is_music_playing
 
 
 def main():
@@ -72,7 +72,7 @@ def main():
     clock = pygame.time.Clock()
 
     while running:
-        running = handle_quit_event()
+        running = handle_quit_event() and is_music_playing()
 
         current_time = pygame.mixer.music.get_pos() / 1000.0
         # Use Polars for data filtering
@@ -116,10 +116,6 @@ def main():
 
         pygame.display.flip()
         clock.tick(60)  # desired FPS
-
-        # Check if music is still playing
-        if not pygame.mixer.music.get_busy():
-            running = False
 
     pygame.quit()
 
