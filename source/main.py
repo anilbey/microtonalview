@@ -1,7 +1,7 @@
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import io
 import sys
-import threading
 import pygame
 
 from audio_features import calculate_loudness, extract_pitch_data_frame
@@ -104,32 +104,27 @@ def main():
 
     # Create a placeholder for pitch_data
     pitch_data = None
-    thread_done = False
 
-    # Function to run in a separate thread
-    def load_data():
-        nonlocal pitch_data, thread_done
-        print("Loading pitch data...")
-        pitch_data = extract_pitch_data_frame(audio_file)
-        thread_done = True
+    with ThreadPoolExecutor() as executor:
+        with loading_screen(screen, width, height, "microtonal-view.png") as loader:
+            # Start the loading task in the background
+            future = executor.submit(extract_pitch_data_frame, audio_file)
+            print("Loading pitch data...")
 
-    with loading_screen(screen, width, height, "microtonal-view.png") as loader:
-        # Start the loading thread
-        loading_thread = threading.Thread(target=load_data)
-        loading_thread.start()
+            while not future.done():
+                # Handle events
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
 
-        while not thread_done:
-            # Handle events
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+                loader.update_stdout_display()
 
-            # Update the stdout display, and redraw the background and logo
-            loader.update_stdout_display()
+                # Control the UI refresh rate
+                pygame.time.Clock().tick(20)
 
-            # Control the UI refresh rate
-            pygame.time.Clock().tick(20)
+            # Get the result of the task
+            pitch_data = future.result()
 
         # Continue after loading is complete
         print("Calculating loudness...")
