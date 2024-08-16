@@ -129,7 +129,7 @@ def main():
             loader.update_stdout_display()
 
             # Control the UI refresh rate
-            pygame.time.Clock().tick(30)
+            pygame.time.Clock().tick(20)
 
         # Continue after loading is complete
         print("Calculating loudness...")
