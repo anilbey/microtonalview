@@ -1,9 +1,10 @@
 import argparse
-from contextlib import contextmanager
+import io
+import sys
+import threading
 import pygame
-import polars as pl
 
-from audio_features import calculate_loudness
+from audio_features import calculate_loudness, extract_pitch_data_frame
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
     add_loudness,
@@ -18,24 +19,60 @@ from event import handle_quit_event, is_music_playing
 from view.text_display import fps_textbox
 
 
-@contextmanager
-def loading_screen(screen: pygame.Surface, width: int, height: int, image_path: str):
-    """Display the loading image."""
-    loading_image = pygame.image.load(image_path)
-    screen.blit(
-        loading_image,
-        (
-            width // 2 - loading_image.get_width() // 2,
-            height // 2 - loading_image.get_height() // 2,
-        ),
-    )
-    pygame.display.flip()  # Update the display to show the loading image
+class loading_screen:
+    def __init__(self, screen, width, height, image_path):
+        self.screen = screen
+        self.width = width
+        self.height = height
+        self.image_path = image_path
+        self.font = pygame.font.Font(None, 36)
+        self.rect_color = (50, 50, 50)
+        self.text_color = (255, 255, 255)
+        self.rect_height = 150
+        self.stdout_buffer = io.StringIO()
+        self.loading_image = pygame.image.load(self.image_path)
 
-    try:
-        yield  # Control is returned to the main program for the duration of the context
-    finally:
-        # Clear the screen after loading is complete
-        screen.fill(Color.WHITE)
+    def __enter__(self):
+        self.original_stdout = sys.stdout
+        sys.stdout = self.stdout_buffer
+        self.display_loading_screen()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout = self.original_stdout
+
+    def display_loading_screen(self):
+        self.screen.fill((255, 255, 255))  # Redraw the white background
+
+        image_rect = self.loading_image.get_rect()
+        position = (
+            (self.width - image_rect.width) // 2,
+            (self.height - image_rect.height) // 2,
+        )
+
+        self.screen.blit(self.loading_image, position)
+        pygame.display.flip()
+
+    def update_stdout_display(self):
+        self.display_loading_screen()  # Redraw background and logo
+
+        stdout_content = self.stdout_buffer.getvalue()
+        lines = stdout_content.splitlines()
+        max_lines = self.rect_height // self.font.get_height()
+        lines_to_display = lines[-max_lines:]
+
+        rect = pygame.Rect(
+            0, self.height - self.rect_height, self.width, self.rect_height
+        )
+        pygame.draw.rect(self.screen, self.rect_color, rect)
+
+        for i, line in enumerate(lines_to_display):
+            text_surface = self.font.render(line, True, self.text_color)
+            self.screen.blit(
+                text_surface,
+                (10, self.height - self.rect_height + i * self.font.get_height()),
+            )
+
         pygame.display.flip()
 
 
@@ -43,7 +80,6 @@ def main():
     parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
 
     # Add the arguments
-    parser.add_argument("features", help="The features csv for rendering")
     parser.add_argument("audio", help="Path to the .wav file")
 
     # Execute the parse_args() method
@@ -56,22 +92,58 @@ def main():
     pygame.init()
     pygame.mixer.init()
     pygame.font.init()
-    width, height = 1920, 1080
-    screen = pygame.display.set_mode((width, height), pygame.SRCALPHA)
-    screen.fill(Color.WHITE)
+
+    # Get the display size for fullscreen mode
+    display_info = pygame.display.Info()
+    width, height = display_info.current_w, display_info.current_h
+    screen = pygame.display.set_mode(
+        (width, height), pygame.FULLSCREEN | pygame.SRCALPHA
+    )
+    screen.fill((255, 255, 255))  # White background
     pygame.display.set_caption("Microtonal View")
 
-    with loading_screen(screen, width, height, "microtonal-view.png"):
-        # Use Polars to load data from the features CSV file
-        pitch_data = pl.read_csv(args.features)
+    # Create a placeholder for pitch_data
+    pitch_data = None
+    thread_done = False
 
-        # Calculate loudness and update pitch data
+    # Function to run in a separate thread
+    def load_data():
+        nonlocal pitch_data, thread_done
+        print("Loading pitch data...")
+        pitch_data = extract_pitch_data_frame(audio_file)
+        thread_done = True
+
+    with loading_screen(screen, width, height, "microtonal-view.png") as loader:
+        # Start the loading thread
+        loading_thread = threading.Thread(target=load_data)
+        loading_thread.start()
+
+        while not thread_done:
+            # Handle events
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            # Update the stdout display, and redraw the background and logo
+            loader.update_stdout_display()
+
+            # Control the UI refresh rate
+            pygame.time.Clock().tick(30)
+
+        # Continue after loading is complete
+        print("Calculating loudness...")
         loudness = calculate_loudness(audio_file)
-        pitch_data = add_loudness(pitch_data, loudness)
+        loader.update_stdout_display()
 
-        # Remove rows with confidence less than 0.5
+        pitch_data = add_loudness(pitch_data, loudness)
+        loader.update_stdout_display()
+
         pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
+        loader.update_stdout_display()
+
         pygame.mixer.music.load(audio_file)
+        loader.update_stdout_display()
 
     min_frequency = pitch_data["frequency"].min()
     max_frequency = pitch_data["frequency"].max()
