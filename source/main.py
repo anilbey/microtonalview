@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 import sys
 import polars as pl
 import pygame
-
+import pygame_gui
 
 from audio_features import calculate_loudness, extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
@@ -18,7 +18,7 @@ from dataframe_operations import (
 )
 from view.shape import Circle
 from view.color import Color
-from event import handle_quit_event, is_music_playing
+from event import is_music_playing
 from view.text_display import fps_textbox
 
 
@@ -43,6 +43,17 @@ def main():
     )
     pygame.display.set_caption("Microtonal View")
 
+    # Initialize pygame_gui
+    manager = pygame_gui.UIManager((width, height))
+
+    # Create the close button before entering the main loop
+    close_button = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((width - 50, 10), (40, 40)),
+        text='X',
+        manager=manager,
+        object_id='#close_button'
+    )
+
     with ThreadPoolExecutor() as executor:
         with loading_screen(screen, width, height, "microtonal-view.png") as loader:
             audio_hash: str = hash_file(audio_file)
@@ -58,13 +69,17 @@ def main():
                 while not future.done():
                     # Handle events
                     for event in pygame.event.get():
+                        manager.process_events(event)
                         if event.type == pygame.QUIT:
                             pygame.quit()
-                            sys.exit()
+                        elif event.type == pygame_gui.UI_BUTTON_PRESSED and event.ui_element == close_button:
+                            pygame.quit()
 
                     loader.display_loading_screen()  # Redraw the loading screen
                     loader.update_stdout_display()
-
+                    manager.update(0.01)
+                    manager.draw_ui(screen)
+                    pygame.display.flip()
                     # Control the UI refresh rate
                     pygame.time.Clock().tick(20)
 
@@ -76,6 +91,9 @@ def main():
             print("Calculating loudness...")
             loader.display_loading_screen()
             loader.update_stdout_display()
+            manager.update(0.01)
+            manager.draw_ui(screen)
+            pygame.display.flip()
             loudness = calculate_loudness(audio_file)
 
             pitch_data = add_loudness(pitch_data, loudness)
@@ -126,8 +144,17 @@ def main():
     circle = Circle(0, 0, 0, 0)  # the drawing circle object
     lazy_pitch_data = pitch_data.lazy()
     pygame.mixer.music.play()
-    while running:
-        running = handle_quit_event() and is_music_playing()
+
+    while is_music_playing() and running:
+        time_delta = clock.tick(60) / 1000.0
+        for event in pygame.event.get():
+            manager.process_events(event)  # Process UI events first
+            if event.type == pygame.QUIT:
+                running = False
+                break
+            elif event.type == pygame_gui.UI_BUTTON_PRESSED and event.ui_element == close_button:
+                running = False
+                break
 
         current_time = (
             pygame.mixer.music.get_pos() / 1000.0
@@ -173,8 +200,11 @@ def main():
 
         screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
 
+        # Update the pygame_gui manager and draw the GUI
+        manager.update(time_delta)
+        manager.draw_ui(screen)
+
         pygame.display.flip()
-        clock.tick(60)  # desired FPS
 
     pygame.quit()
 

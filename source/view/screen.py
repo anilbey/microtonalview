@@ -40,7 +40,6 @@ class loading_screen:
         )
 
         self.screen.blit(self.loading_image, position)
-        pygame.display.flip()
 
     def update_stdout_display(self) -> None:
         """Updates the stdout display element."""
@@ -60,5 +59,3 @@ class loading_screen:
                 text_surface,
                 (10, self.height - self.rect_height + i * self.font.get_height()),
             )
-
-        pygame.display.flip()
