@@ -24,14 +24,10 @@ from view.text_display import fps_textbox
 
 def main():
     parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
-
-    # Add the arguments
     parser.add_argument("audio", help="Path to the .wav file")
-
-    # Execute the parse_args() method
     args = parser.parse_args()
-    # Load the audio file
     audio_file = args.audio
+
     icon = pygame.image.load("logo.png")
     pygame.display.set_icon(icon)
 
