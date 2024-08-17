@@ -1,9 +1,12 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import sys
+import polars as pl
 import pygame
 
+
 from audio_features import calculate_loudness, extract_pitch_data_frame
+from caching import hash_file, load_from_cache, save_to_cache
 from view.screen import loading_screen
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
@@ -47,39 +50,44 @@ def main():
 
     with ThreadPoolExecutor() as executor:
         with loading_screen(screen, width, height, "microtonal-view.png") as loader:
-            # Start the loading task in the background
-            future = executor.submit(extract_pitch_data_frame, audio_file)
-            print("Loading pitch data...")
+            audio_hash: str = hash_file(audio_file)
+            cached_data: pl.DataFrame = load_from_cache(audio_hash)
+            if cached_data is not None:
+                pitch_data = cached_data
+                print("Using cached data...")
+            else:
+                # Start the loading task in the background
+                future = executor.submit(extract_pitch_data_frame, audio_file)
+                print("Loading pitch data...")
 
-            while not future.done():
-                # Handle events
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        sys.exit()
+                while not future.done():
+                    # Handle events
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
 
-                loader.display_loading_screen()  # Redraw the loading screen
-                loader.update_stdout_display()
+                    loader.display_loading_screen()  # Redraw the loading screen
+                    loader.update_stdout_display()
 
-                # Control the UI refresh rate
-                pygame.time.Clock().tick(20)
+                    # Control the UI refresh rate
+                    pygame.time.Clock().tick(20)
 
-            # Get the result of the task
-            pitch_data = future.result()
+                # Get the result of the task
+                pitch_data = future.result()
+                save_to_cache(audio_hash, pitch_data)
 
-        # Continue after loading is complete
-        print("Calculating loudness...")
-        loudness = calculate_loudness(audio_file)
-        loader.update_stdout_display()
+            # Continue after loading is complete
+            print("Calculating loudness...")
+            loader.display_loading_screen()
+            loader.update_stdout_display()
+            loudness = calculate_loudness(audio_file)
 
-        pitch_data = add_loudness(pitch_data, loudness)
-        loader.update_stdout_display()
+            pitch_data = add_loudness(pitch_data, loudness)
 
-        pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
-        loader.update_stdout_display()
+            pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
 
-        pygame.mixer.music.load(audio_file)
-        loader.update_stdout_display()
+            pygame.mixer.music.load(audio_file)
 
     min_frequency = pitch_data["frequency"].min()
     max_frequency = pitch_data["frequency"].max()
