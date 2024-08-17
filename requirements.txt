@@ -3,4 +3,4 @@ crepe>=0.0.15
 librosa>=0.10.1
 polars>=1.4.1
 numpy>=1.26.2
-pygame>=2.5.2
+pygame-ce>=2.5.1
