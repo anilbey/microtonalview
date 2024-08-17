@@ -1,4 +1,4 @@
-static-checks:
+lint:
 	mypy --ignore-missing-imports .
 	ruff check .
 

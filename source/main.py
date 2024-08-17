@@ -2,6 +2,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import io
 import sys
+from typing import Self
 import pygame
 
 from audio_features import calculate_loudness, extract_pitch_data_frame
@@ -20,7 +21,7 @@ from view.text_display import fps_textbox
 
 
 class loading_screen:
-    def __init__(self, screen, width, height, image_path):
+    def __init__(self, screen: pygame.Surface, width: int, height: int, image_path: str) -> None:
         self.screen = screen
         self.width = width
         self.height = height
@@ -32,7 +33,7 @@ class loading_screen:
         self.stdout_buffer = io.StringIO()
         self.loading_image = pygame.image.load(self.image_path)
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.original_stdout = sys.stdout
         sys.stdout = self.stdout_buffer
         self.display_loading_screen()
@@ -41,7 +42,7 @@ class loading_screen:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self.original_stdout
 
-    def display_loading_screen(self):
+    def display_loading_screen(self) -> None:
         self.screen.fill((255, 255, 255))  # Redraw the white background
 
         image_rect = self.loading_image.get_rect()
@@ -53,9 +54,8 @@ class loading_screen:
         self.screen.blit(self.loading_image, position)
         pygame.display.flip()
 
-    def update_stdout_display(self):
-        self.display_loading_screen()  # Redraw background and logo
-
+    def update_stdout_display(self) -> None:
+        """Updates the stdout display element."""
         stdout_content = self.stdout_buffer.getvalue()
         lines = stdout_content.splitlines()
         max_lines = self.rect_height // self.font.get_height()
@@ -118,6 +118,7 @@ def main():
                         pygame.quit()
                         sys.exit()
 
+                loader.display_loading_screen()  # Redraw the loading screen
                 loader.update_stdout_display()
 
                 # Control the UI refresh rate
@@ -187,7 +188,7 @@ def main():
 
         current_time = (
             pygame.mixer.music.get_pos() / 1000.0
-        )  # offset to start slightly earlier
+        )
         # Get the window frame lazily
         dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(
             lazy_pitch_data, current_time
@@ -224,9 +225,7 @@ def main():
                 (int(row["x"]) - circle_size, int(row["y"]) - circle_size),
             )
 
-        # Draw the updated dynamic elements over the static ones
         screen.blit(dynamic_elements_surface, (0, 0))
-        # Draw the static elements to the screen
         screen.blit(static_elements_surface, (0, 0))
 
         screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
