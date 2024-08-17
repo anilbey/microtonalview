@@ -1,6 +1,5 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-import sys
 import polars as pl
 import pygame
 import pygame_gui
