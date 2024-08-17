@@ -45,16 +45,15 @@ def main():
 
     # Initialize pygame_gui
     manager = pygame_gui.UIManager((width, height))
-
     close_button = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((width - 50, 10), (40, 40)),
+        relative_rect=pygame.Rect((width - 45, 10), (35, 35)),
         text='X',
         manager=manager,
         object_id='#close_button'
     )
 
     minimize_button = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((width - 100, 10), (40, 40)),
+        relative_rect=pygame.Rect((width - 85, 10), (35, 35)),
         text='-',
         manager=manager,
         object_id='#minimize_button'
