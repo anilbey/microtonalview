@@ -45,9 +45,6 @@ def main():
     screen.fill((255, 255, 255))  # White background
     pygame.display.set_caption("Microtonal View")
 
-    # Create a placeholder for pitch_data
-    pitch_data = None
-
     with ThreadPoolExecutor() as executor:
         with loading_screen(screen, width, height, "microtonal-view.png") as loader:
             # Start the loading task in the background
