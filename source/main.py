@@ -46,12 +46,18 @@ def main():
     # Initialize pygame_gui
     manager = pygame_gui.UIManager((width, height))
 
-    # Create the close button before entering the main loop
     close_button = pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect((width - 50, 10), (40, 40)),
         text='X',
         manager=manager,
         object_id='#close_button'
+    )
+
+    minimize_button = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((width - 100, 10), (40, 40)),
+        text='-',
+        manager=manager,
+        object_id='#minimize_button'
     )
 
     with ThreadPoolExecutor() as executor:
@@ -72,8 +78,11 @@ def main():
                         manager.process_events(event)
                         if event.type == pygame.QUIT:
                             pygame.quit()
-                        elif event.type == pygame_gui.UI_BUTTON_PRESSED and event.ui_element == close_button:
-                            pygame.quit()
+                        elif event.type == pygame_gui.UI_BUTTON_PRESSED:
+                            if event.ui_element == close_button:
+                                pygame.quit()
+                            elif event.ui_element == minimize_button:
+                                pygame.display.iconify()
 
                     loader.display_loading_screen()  # Redraw the loading screen
                     loader.update_stdout_display()
@@ -152,9 +161,12 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
                 break
-            elif event.type == pygame_gui.UI_BUTTON_PRESSED and event.ui_element == close_button:
-                running = False
-                break
+            elif event.type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == close_button:
+                    running = False
+                    break
+                elif event.ui_element == minimize_button:
+                    pygame.display.iconify()
 
         current_time = (
             pygame.mixer.music.get_pos() / 1000.0
