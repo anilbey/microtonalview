@@ -41,7 +41,6 @@ def main():
     screen = pygame.display.set_mode(
         (width, height), pygame.FULLSCREEN | pygame.SRCALPHA
     )
-    screen.fill((255, 255, 255))  # White background
     pygame.display.set_caption("Microtonal View")
 
     with ThreadPoolExecutor() as executor:
