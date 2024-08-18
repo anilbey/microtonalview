@@ -20,6 +20,7 @@ from view.color import Color
 from event import is_music_playing
 from view.text_display import fps_textbox
 
+import time
 
 def main():
     parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
@@ -66,12 +67,10 @@ def main():
                 pitch_data = cached_data
                 print("Using cached data...")
             else:
-                # Start the loading task in the background
                 future = executor.submit(extract_pitch_data_frame, audio_file)
                 print("Loading pitch data...")
 
                 while not future.done():
-                    # Handle events
                     for event in pygame.event.get():
                         manager.process_events(event)
                         if event.type == pygame.QUIT:
@@ -82,19 +81,16 @@ def main():
                             elif event.ui_element == minimize_button:
                                 pygame.display.iconify()
 
-                    loader.display_loading_screen()  # Redraw the loading screen
+                    loader.display_loading_screen()
                     loader.update_stdout_display()
                     manager.update(0.01)
                     manager.draw_ui(screen)
                     pygame.display.flip()
-                    # Control the UI refresh rate
                     pygame.time.Clock().tick(20)
 
-                # Get the result of the task
                 pitch_data = future.result()
                 save_to_cache(audio_hash, pitch_data)
 
-            # Continue after loading is complete
             print("Calculating loudness...")
             loader.display_loading_screen()
             loader.update_stdout_display()
@@ -104,7 +100,6 @@ def main():
             loudness = calculate_loudness(audio_file)
 
             pitch_data = add_loudness(pitch_data, loudness)
-
             pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
 
             pygame.mixer.music.load(audio_file)
@@ -115,15 +110,12 @@ def main():
     min_loudness = pitch_data["loudness"].min()
     max_loudness = pitch_data["loudness"].max()
 
-    # Define padding as a percentage of the height
-    padding_percent = 0.15  # 15% padding at the bottom
+    padding_percent = 0.15
     padding_bottom = int(height * padding_percent)
 
-    # Adjust scale_y to fit within the screen, considering padding
     scale_y = (height - padding_bottom) / (max_frequency - min_frequency)
     scale_x = width / 5
 
-    # Create a surface for static elements
     static_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
     pygame.draw.line(
         static_elements_surface,
@@ -142,20 +134,37 @@ def main():
         padding_bottom,
     )
 
-    # Create a separate surface for dynamic elements (circles)
     dynamic_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
     running = True
     clock = pygame.time.Clock()
 
-    circle = Circle(0, 0, 0, 0)  # the drawing circle object
+    circle = Circle(0, 0, 0, 0)
     lazy_pitch_data = pitch_data.lazy()
     pygame.mixer.music.play()
 
+    slider = pygame_gui.elements.UIHorizontalSlider(
+        relative_rect=pygame.Rect((20, height - 60), (width - 40, 40)),
+        start_value=0,
+        value_range=(0, 64),
+        manager=manager,
+        object_id='#slider'
+    )
+
+    music_length = pygame.mixer.Sound(audio_file).get_length()
+
+    # Timer to track actual playback time
+    start_time = time.time()
+    current_time = 0
+    pygame.mixer.music.play()
+
+    slider_dragging = False  # Flag to track if the slider is being dragged
+
     while is_music_playing() and running:
         time_delta = clock.tick(60) / 1000.0
+
         for event in pygame.event.get():
-            manager.process_events(event)  # Process UI events first
+            manager.process_events(event)
             if event.type == pygame.QUIT:
                 running = False
                 break
@@ -165,11 +174,19 @@ def main():
                     break
                 elif event.ui_element == minimize_button:
                     pygame.display.iconify()
+            elif event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED and event.ui_element == slider:
+                # Handle slider dragging event
+                slider_dragging = True
+                current_time = (event.value / slider.value_range[1]) * music_length
+                start_time = time.time() - current_time
+                pygame.mixer.music.play(start=current_time)  # Restart music at new time
 
-        current_time = (
-            pygame.mixer.music.get_pos() / 1000.0
-        )
-        # Get the window frame lazily
+        if not slider_dragging:
+            current_time = time.time() - start_time
+        # Update slider based on the accurate current time
+        slider_percentage = (current_time / music_length) * slider.value_range[1]
+        slider.set_current_value(slider_percentage)
+
         dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(
             lazy_pitch_data, current_time
         ).with_columns(
@@ -182,7 +199,6 @@ def main():
         )
         dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
 
-        # Clear the dynamic elements surface each frame
         dynamic_elements_surface.fill(Color.WHITE)
 
         for row in dataframe_window_to_display.iter_rows(named=True):
@@ -210,13 +226,14 @@ def main():
 
         screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
 
-        # Update the pygame_gui manager and draw the GUI
         manager.update(time_delta)
         manager.draw_ui(screen)
 
         pygame.display.flip()
 
+        slider_dragging = False
+
     pygame.quit()
 
-
 main()
+
