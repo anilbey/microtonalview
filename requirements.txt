@@ -5,3 +5,5 @@ polars>=1.4.1
 numpy>=1.26.2
 pygame-ce>=2.5.1
 pygame_gui>=0.6.12
+simpleaudio==1.0.4
+pydub==0.25.1

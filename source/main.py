@@ -3,7 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 import polars as pl
 import pygame
 import pygame_gui
-
+from pydub import AudioSegment
+from pydub.playback import _play_with_simpleaudio
 from audio_features import calculate_loudness, extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
 from view.screen import loading_screen
@@ -17,10 +18,44 @@ from dataframe_operations import (
 )
 from view.shape import Circle
 from view.color import Color
-from event import is_music_playing
 from view.text_display import fps_textbox
 
 import time
+
+class PydubPlayer:
+    def __init__(self, audio_segment):
+        self.audio_segment = audio_segment
+        self.playback = None
+        self.start_time = None
+        self.pause_time = 0
+
+    def play(self, start_time=0):
+        self.stop()  # Stop any existing playback
+        self.start_time = time.time() - start_time
+        self.playback = _play_with_simpleaudio(self.audio_segment[start_time * 1000:])
+        self.pause_time = start_time  # Set pause time to start_time on play
+
+    def stop(self):
+        if self.playback is not None:
+            self.playback.stop()
+            self.playback = None
+
+    def pause(self):
+        if self.playback is not None:
+            self.pause_time = self.get_elapsed_time()
+            self.playback.stop()
+
+    def resume(self):
+        self.play(start_time=self.pause_time)
+
+    def get_elapsed_time(self):
+        if self.playback is None:
+            return 0
+        return time.time() - self.start_time
+
+    def is_playing(self):
+        return self.playback is not None and self.playback.is_playing()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
@@ -32,7 +67,6 @@ def main():
     pygame.display.set_icon(icon)
 
     pygame.init()
-    pygame.mixer.init()
     pygame.font.init()
 
     # Get the display size for fullscreen mode
@@ -102,8 +136,6 @@ def main():
             pitch_data = add_loudness(pitch_data, loudness)
             pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
 
-            pygame.mixer.music.load(audio_file)
-
     min_frequency = pitch_data["frequency"].min()
     max_frequency = pitch_data["frequency"].max()
 
@@ -141,7 +173,9 @@ def main():
 
     circle = Circle(0, 0, 0, 0)
     lazy_pitch_data = pitch_data.lazy()
-    pygame.mixer.music.play()
+
+    audio_segment = AudioSegment.from_wav(audio_file)
+    player = PydubPlayer(audio_segment)
 
     slider = pygame_gui.elements.UIHorizontalSlider(
         relative_rect=pygame.Rect((20, height - 60), (width - 40, 40)),
@@ -151,16 +185,11 @@ def main():
         object_id='#slider'
     )
 
-    music_length = pygame.mixer.Sound(audio_file).get_length()
+    music_length = len(audio_segment) / 1000.0  # in seconds
 
-    # Timer to track actual playback time
-    start_time = time.time()
-    current_time = 0
-    pygame.mixer.music.play()
+    player.play()  # Start playback
 
-    slider_dragging = False  # Flag to track if the slider is being dragged
-
-    while is_music_playing() and running:
+    while player.is_playing() and running:
         time_delta = clock.tick(60) / 1000.0
 
         for event in pygame.event.get():
@@ -176,14 +205,10 @@ def main():
                     pygame.display.iconify()
             elif event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED and event.ui_element == slider:
                 # Handle slider dragging event
-                slider_dragging = True
                 current_time = (event.value / slider.value_range[1]) * music_length
-                start_time = time.time() - current_time
-                pygame.mixer.music.play(start=current_time)  # Restart music at new time
+                player.play(start_time=current_time)  # Restart music at new time
 
-        if not slider_dragging:
-            current_time = time.time() - start_time
-        # Update slider based on the accurate current time
+        current_time = player.get_elapsed_time()
         slider_percentage = (current_time / music_length) * slider.value_range[1]
         slider.set_current_value(slider_percentage)
 
@@ -231,9 +256,7 @@ def main():
 
         pygame.display.flip()
 
-        slider_dragging = False
-
+    player.stop()
     pygame.quit()
 
 main()
-
