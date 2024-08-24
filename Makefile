@@ -2,7 +2,7 @@ lint:
 	mypy --ignore-missing-imports .
 	ruff check .
 
-BASE_NAME = input/tunar-nihavend-taksim
+BASE_NAME = input/aka-saba-taksim
 SCRIPT = source/main.py
 
 record:
