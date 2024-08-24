@@ -22,8 +22,6 @@ from view.shape import Circle
 from view.color import Color
 from view.text_display import fps_textbox
 
-import time
-
 
 def main():
     parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
