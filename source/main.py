@@ -207,7 +207,16 @@ def main():
                 # Handle slider dragging event
                 current_time = (event.value / slider.value_range[1]) * music_length
                 player.play(start_time=current_time)  # Restart music at new time
-
+            elif event.type == pygame.KEYDOWN:
+                SLIDER_STEP = 1
+                if event.key == pygame.K_LEFT:
+                    new_value = max(slider.get_current_value() - SLIDER_STEP, slider.value_range[0])
+                    slider.set_current_value(new_value)
+                elif event.key == pygame.K_RIGHT:
+                    new_value = min(slider.get_current_value() + SLIDER_STEP, slider.value_range[1])
+                    slider.set_current_value(new_value)
+                current_time = (new_value / slider.value_range[1]) * music_length
+                player.play(start_time=current_time)
         current_time = player.get_elapsed_time()
         slider_percentage = (current_time / music_length) * slider.value_range[1]
         slider.set_current_value(slider_percentage)
