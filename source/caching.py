@@ -13,18 +13,19 @@ APP_NAME = "microtonal_view"
 def get_cache_directory() -> Path:
     """Get the system's cache directory for the application based on the OS."""
     home = Path.home()
-    if os.name == 'nt':  # Windows
-        cache_dir = home / 'AppData' / 'Local' / APP_NAME / 'Cache'
-    elif os.name == 'posix':
-        if sys.platform == 'darwin':  # macOS
-            cache_dir = home / 'Library' / 'Caches' / APP_NAME
+    if os.name == "nt":  # Windows
+        cache_dir = home / "AppData" / "Local" / APP_NAME / "Cache"
+    elif os.name == "posix":
+        if sys.platform == "darwin":  # macOS
+            cache_dir = home / "Library" / "Caches" / APP_NAME
         else:  # Linux and other Unix-like OS
-            cache_dir = home / '.cache' / APP_NAME
+            cache_dir = home / ".cache" / APP_NAME
     else:
         raise RuntimeError("Unsupported operating system")
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir
+
 
 def hash_file(file_path: Path) -> str:
     """Generate a SHA-256 hash of the file."""

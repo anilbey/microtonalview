@@ -1,4 +1,5 @@
 """Shape objects."""
+
 from view.color import RGBA, Color, blend_color, frequency_to_color
 
 

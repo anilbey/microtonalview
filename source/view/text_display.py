@@ -1,4 +1,5 @@
 """Text display functions for the visualiser."""
+
 import pygame
 from view.color import Color
 
