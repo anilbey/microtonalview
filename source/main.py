@@ -38,6 +38,9 @@ def main():
     # Get the display size for fullscreen mode
     display_info = pygame.display.Info()
     width, height = display_info.current_w, display_info.current_h
+    top_area_height = 60  # Height reserved for buttons and FPS display
+    usable_height = height - top_area_height  # Height available for the rest of the program
+
     screen = pygame.display.set_mode(
         (width, height), pygame.FULLSCREEN | pygame.SRCALPHA
     )
@@ -109,30 +112,30 @@ def main():
     max_loudness = pitch_data["loudness"].max()
 
     padding_percent = 0.15
-    padding_bottom = int(height * padding_percent)
+    padding_bottom = int(usable_height * padding_percent)
 
-    scale_y = (height - padding_bottom) / (max_frequency - min_frequency)
+    scale_y = (usable_height - padding_bottom) / (max_frequency - min_frequency)
     scale_x = width / 5
 
-    static_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    static_elements_surface = pygame.Surface((width, usable_height), pygame.SRCALPHA)
     pygame.draw.line(
         static_elements_surface,
         Color.MID_LINE_SEPARATOR,
         (width // 2, 0),
-        (width // 2, height),
+        (width // 2, usable_height),
         1,
     )
     top_k_freq_bins = get_top_k_frequency_bins(pitch_data, bin_size=30, k=10)
     draw_frequency_lines(
         static_elements_surface,
         top_k_freq_bins,
-        height,
+        usable_height,
         min_frequency,
         max_frequency,
         padding_bottom,
     )
 
-    dynamic_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    dynamic_elements_surface = pygame.Surface((width, usable_height), pygame.SRCALPHA)
 
     program_state = ProgramState.RUNNING
     clock = pygame.time.Clock()
@@ -171,14 +174,16 @@ def main():
             [
                 compute_x_positions_lazy(current_time, scale_x).alias("x"),
                 compute_y_positions_lazy(
-                    height, padding_bottom, min_frequency, scale_y
+                    usable_height, padding_bottom, min_frequency, scale_y
                 ).alias("y"),
             ]
         )
         dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
 
-        dynamic_elements_surface.fill(Color.WHITE)
+        # Clear the screen with white color (including the top area)
+        screen.fill(Color.WHITE)
 
+        dynamic_elements_surface.fill(Color.WHITE)
         for row in dataframe_window_to_display.iter_rows(named=True):
             circle.time = row["time"]
             circle.frequency = row["frequency"]
@@ -199,9 +204,10 @@ def main():
                 (int(row["x"]) - circle_size, int(row["y"]) - circle_size),
             )
 
-        screen.blit(dynamic_elements_surface, (0, 0))
-        screen.blit(static_elements_surface, (0, 0))
+        screen.blit(dynamic_elements_surface, (0, top_area_height))
+        screen.blit(static_elements_surface, (0, top_area_height))
 
+        # Draw the FPS counter in the reserved top area
         screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
 
         manager.update(time_delta)
