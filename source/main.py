@@ -22,6 +22,7 @@ from view.text_display import fps_textbox
 
 import time
 
+
 class PydubPlayer:
     def __init__(self, audio_segment):
         self.audio_segment = audio_segment
@@ -32,7 +33,7 @@ class PydubPlayer:
     def play(self, start_time=0):
         self.stop()  # Stop any existing playback
         self.start_time = time.time() - start_time
-        self.playback = _play_with_simpleaudio(self.audio_segment[start_time * 1000:])
+        self.playback = _play_with_simpleaudio(self.audio_segment[start_time * 1000 :])
         self.pause_time = start_time  # Set pause time to start_time on play
 
     def stop(self):
@@ -81,16 +82,16 @@ def main():
     manager = pygame_gui.UIManager((width, height))
     close_button = pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect((width - 45, 10), (35, 35)),
-        text='X',
+        text="X",
         manager=manager,
-        object_id='#close_button'
+        object_id="#close_button",
     )
 
     minimize_button = pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect((width - 85, 10), (35, 35)),
-        text='-',
+        text="-",
         manager=manager,
-        object_id='#minimize_button'
+        object_id="#minimize_button",
     )
 
     with ThreadPoolExecutor() as executor:
@@ -182,7 +183,7 @@ def main():
         start_value=0,
         value_range=(0, 64),
         manager=manager,
-        object_id='#slider'
+        object_id="#slider",
     )
 
     music_length = len(audio_segment) / 1000.0  # in seconds
@@ -192,31 +193,9 @@ def main():
     while player.is_playing() and running:
         time_delta = clock.tick(60) / 1000.0
 
-        for event in pygame.event.get():
-            manager.process_events(event)
-            if event.type == pygame.QUIT:
-                running = False
-                break
-            elif event.type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == close_button:
-                    running = False
-                    break
-                elif event.ui_element == minimize_button:
-                    pygame.display.iconify()
-            elif event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED and event.ui_element == slider:
-                # Handle slider dragging event
-                current_time = (event.value / slider.value_range[1]) * music_length
-                player.play(start_time=current_time)  # Restart music at new time
-            elif event.type == pygame.KEYDOWN:
-                SLIDER_STEP = 1
-                if event.key == pygame.K_LEFT:
-                    new_value = max(slider.get_current_value() - SLIDER_STEP, slider.value_range[0])
-                    slider.set_current_value(new_value)
-                elif event.key == pygame.K_RIGHT:
-                    new_value = min(slider.get_current_value() + SLIDER_STEP, slider.value_range[1])
-                    slider.set_current_value(new_value)
-                current_time = (new_value / slider.value_range[1]) * music_length
-                player.play(start_time=current_time)
+        running = handle_events(
+            manager, close_button, minimize_button, player, slider, music_length
+        )
         current_time = player.get_elapsed_time()
         slider_percentage = (current_time / music_length) * slider.value_range[1]
         slider.set_current_value(slider_percentage)
@@ -267,5 +246,47 @@ def main():
 
     player.stop()
     pygame.quit()
+
+
+def handle_events(
+    ui_manager: pygame_gui.UIManager,
+    close_button: pygame_gui.elements.UIButton,
+    minimize_button: pygame_gui.elements.UIButton,
+    player: PydubPlayer,
+    slider: pygame_gui.elements.UIHorizontalSlider,
+    music_length: float,
+) -> bool:
+    """Event controller loop. Returns false to terminate the application."""
+    for event in pygame.event.get():
+        ui_manager.process_events(event)
+        if event.type == pygame.QUIT:
+            return False
+        elif event.type == pygame_gui.UI_BUTTON_PRESSED:
+            if event.ui_element == close_button:
+                return False
+            elif event.ui_element == minimize_button:
+                pygame.display.iconify()
+        elif (
+            event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED
+            and event.ui_element == slider
+        ):
+            current_time = (event.value / slider.value_range[1]) * music_length
+            player.play(start_time=current_time)  # Restart music at new time
+        elif event.type == pygame.KEYDOWN:
+            SLIDER_STEP = 1
+            if event.key == pygame.K_LEFT:
+                new_value = max(
+                    slider.get_current_value() - SLIDER_STEP, slider.value_range[0]
+                )
+                slider.set_current_value(new_value)
+            elif event.key == pygame.K_RIGHT:
+                new_value = min(
+                    slider.get_current_value() + SLIDER_STEP, slider.value_range[1]
+                )
+                slider.set_current_value(new_value)
+            current_time = (new_value / slider.value_range[1]) * music_length
+            player.play(start_time=current_time)
+    return True
+
 
 main()
