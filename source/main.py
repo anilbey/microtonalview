@@ -4,9 +4,10 @@ import polars as pl
 import pygame
 import pygame_gui
 from pydub import AudioSegment
-from pydub.playback import _play_with_simpleaudio
 from audio_features import calculate_loudness, extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
+from controller.audio_player import AudioPlayer
+from controller.event_handler import handle_events
 from view.screen import loading_screen
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
@@ -21,41 +22,6 @@ from view.color import Color
 from view.text_display import fps_textbox
 
 import time
-
-
-class PydubPlayer:
-    def __init__(self, audio_segment):
-        self.audio_segment = audio_segment
-        self.playback = None
-        self.start_time = None
-        self.pause_time = 0
-
-    def play(self, start_time=0):
-        self.stop()  # Stop any existing playback
-        self.start_time = time.time() - start_time
-        self.playback = _play_with_simpleaudio(self.audio_segment[start_time * 1000 :])
-        self.pause_time = start_time  # Set pause time to start_time on play
-
-    def stop(self):
-        if self.playback is not None:
-            self.playback.stop()
-            self.playback = None
-
-    def pause(self):
-        if self.playback is not None:
-            self.pause_time = self.get_elapsed_time()
-            self.playback.stop()
-
-    def resume(self):
-        self.play(start_time=self.pause_time)
-
-    def get_elapsed_time(self):
-        if self.playback is None:
-            return 0
-        return time.time() - self.start_time
-
-    def is_playing(self):
-        return self.playback is not None and self.playback.is_playing()
 
 
 def main():
@@ -176,7 +142,7 @@ def main():
     lazy_pitch_data = pitch_data.lazy()
 
     audio_segment = AudioSegment.from_wav(audio_file)
-    player = PydubPlayer(audio_segment)
+    player = AudioPlayer(audio_segment)
 
     slider = pygame_gui.elements.UIHorizontalSlider(
         relative_rect=pygame.Rect((20, height - 60), (width - 40, 40)),
@@ -246,47 +212,6 @@ def main():
 
     player.stop()
     pygame.quit()
-
-
-def handle_events(
-    ui_manager: pygame_gui.UIManager,
-    close_button: pygame_gui.elements.UIButton,
-    minimize_button: pygame_gui.elements.UIButton,
-    player: PydubPlayer,
-    slider: pygame_gui.elements.UIHorizontalSlider,
-    music_length: float,
-) -> bool:
-    """Event controller loop. Returns false to terminate the application."""
-    for event in pygame.event.get():
-        ui_manager.process_events(event)
-        if event.type == pygame.QUIT:
-            return False
-        elif event.type == pygame_gui.UI_BUTTON_PRESSED:
-            if event.ui_element == close_button:
-                return False
-            elif event.ui_element == minimize_button:
-                pygame.display.iconify()
-        elif (
-            event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED
-            and event.ui_element == slider
-        ):
-            current_time = (event.value / slider.value_range[1]) * music_length
-            player.play(start_time=current_time)  # Restart music at new time
-        elif event.type == pygame.KEYDOWN:
-            SLIDER_STEP = 1
-            if event.key == pygame.K_LEFT:
-                new_value = max(
-                    slider.get_current_value() - SLIDER_STEP, slider.value_range[0]
-                )
-                slider.set_current_value(new_value)
-            elif event.key == pygame.K_RIGHT:
-                new_value = min(
-                    slider.get_current_value() + SLIDER_STEP, slider.value_range[1]
-                )
-                slider.set_current_value(new_value)
-            current_time = (new_value / slider.value_range[1]) * music_length
-            player.play(start_time=current_time)
-    return True
 
 
 main()
