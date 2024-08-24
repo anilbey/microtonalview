@@ -4,6 +4,7 @@ import pygame
 import pygame_gui
 
 from controller.audio_player import AudioPlayer
+from controller.program_state import ProgramState
 
 
 def handle_events(
@@ -13,15 +14,15 @@ def handle_events(
     player: AudioPlayer,
     slider: pygame_gui.elements.UIHorizontalSlider,
     music_length: float,
-) -> bool:
-    """Event controller loop. Returns false to terminate the application."""
+) -> ProgramState:
+    """Event controller loop. Returns the ProgramState."""
     for event in pygame.event.get():
         ui_manager.process_events(event)
         if event.type == pygame.QUIT:
-            return False
+            return ProgramState.TERMINATED
         elif event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element == close_button:
-                return False
+                return ProgramState.TERMINATED
             elif event.ui_element == minimize_button:
                 pygame.display.iconify()
         elif (
@@ -45,4 +46,4 @@ def handle_events(
             current_time = (new_value / slider.value_range[1]) * music_length
             player.play(start_time=current_time)
 
-    return True
+    return ProgramState.RUNNING

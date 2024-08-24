@@ -8,6 +8,7 @@ from audio_features import calculate_loudness, extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
 from controller.audio_player import AudioPlayer
 from controller.event_handler import handle_events
+from controller.program_state import ProgramState
 from view.screen import loading_screen
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
@@ -135,7 +136,7 @@ def main():
 
     dynamic_elements_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
-    running = True
+    program_state = ProgramState.RUNNING
     clock = pygame.time.Clock()
 
     circle = Circle(0, 0, 0, 0)
@@ -156,10 +157,10 @@ def main():
 
     player.play()  # Start playback
 
-    while player.is_playing() and running:
+    while player.is_playing() and program_state == ProgramState.RUNNING:
         time_delta = clock.tick(60) / 1000.0
 
-        running = handle_events(
+        program_state = handle_events(
             manager, close_button, minimize_button, player, slider, music_length
         )
         current_time = player.get_elapsed_time()
