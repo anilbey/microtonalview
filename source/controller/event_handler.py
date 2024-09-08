@@ -25,6 +25,8 @@ def handle_events(
                 return ProgramState.TERMINATED
             elif event.ui_element == minimize_button:
                 pygame.display.iconify()
+            else:
+                continue
         elif (
             event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED
             and event.ui_element == slider
@@ -43,7 +45,11 @@ def handle_events(
                     slider.get_current_value() + SLIDER_STEP, slider.value_range[1]
                 )
                 slider.set_current_value(new_value)
+            else:
+                continue
             current_time = (new_value / slider.value_range[1]) * music_length
             player.play(start_time=current_time)
+        else:
+            continue
 
     return ProgramState.RUNNING
