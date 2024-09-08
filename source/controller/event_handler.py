@@ -7,7 +7,7 @@ from controller.audio_player import AudioPlayer
 from controller.program_state import ProgramState
 
 
-def handle_events(
+def handle_visualiser_events(
     ui_manager: pygame_gui.UIManager,
     close_button: pygame_gui.elements.UIButton,
     minimize_button: pygame_gui.elements.UIButton,
@@ -53,3 +53,24 @@ def handle_events(
             continue
 
     return ProgramState.RUNNING
+
+
+def handle_loading_screen_events(
+    ui_manager: pygame_gui.UIManager,
+    close_button: pygame_gui.elements.UIButton,
+    minimize_button: pygame_gui.elements.UIButton
+) -> None:
+    """Event handler for the loading screen with future cancellation."""
+    for event in pygame.event.get():
+        ui_manager.process_events(event)
+        if event.type == pygame.QUIT:
+            pygame.quit()
+        elif event.type == pygame_gui.UI_BUTTON_PRESSED:
+            if event.ui_element == close_button:
+                pygame.quit()
+            elif event.ui_element == minimize_button:
+                pygame.display.iconify()
+            else:
+                continue
+        else:
+            continue

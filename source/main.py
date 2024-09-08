@@ -7,7 +7,7 @@ from pydub import AudioSegment
 from audio_features import calculate_loudness, extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
 from controller.audio_player import AudioPlayer
-from controller.event_handler import handle_events
+from controller.event_handler import handle_loading_screen_events, handle_visualiser_events
 from controller.program_state import ProgramState
 from view.screen import loading_screen
 from view.porte import draw_frequency_lines
@@ -74,15 +74,7 @@ def main():
                 print("Loading pitch data...")
 
                 while not future.done():
-                    for event in pygame.event.get():
-                        manager.process_events(event)
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                        elif event.type == pygame_gui.UI_BUTTON_PRESSED:
-                            if event.ui_element == close_button:
-                                pygame.quit()
-                            elif event.ui_element == minimize_button:
-                                pygame.display.iconify()
+                    handle_loading_screen_events(manager, close_button, minimize_button)
 
                     loader.display_loading_screen()
                     loader.update_stdout_display()
@@ -161,7 +153,7 @@ def main():
     while player.is_playing() and program_state == ProgramState.RUNNING:
         time_delta = clock.tick(60) / 1000.0
 
-        program_state = handle_events(
+        program_state = handle_visualiser_events(
             manager, close_button, minimize_button, player, slider, music_length
         )
         current_time = player.get_elapsed_time()
