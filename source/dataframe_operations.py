@@ -3,6 +3,9 @@
 import numpy as np
 import polars as pl
 
+from audio_features import calculate_loudness
+from model import Pitch
+
 
 def _calculate_frequency_bins(
     df: pl.DataFrame, bin_size: int
@@ -63,3 +66,35 @@ def compute_y_positions_lazy(
     height: int, padding_bottom: int, min_frequency: float, scale_y: float
 ) -> pl.Expr:
     return (height - padding_bottom) - (pl.col("frequency") - min_frequency) * scale_y
+
+
+def process_pitch_data(pitch_data: pl.DataFrame, audio_file: str) -> Pitch:
+    """Process the pitch data and return a Pitch object."""
+    processed_pitch_data = process_pitch_data_frame(pitch_data, audio_file)
+
+    min_frequency = processed_pitch_data["frequency"].min()
+    max_frequency = processed_pitch_data["frequency"].max()
+
+    min_loudness = processed_pitch_data["loudness"].min()
+    max_loudness = processed_pitch_data["loudness"].max()
+
+    top_k_freq_bins = get_top_k_frequency_bins(processed_pitch_data, bin_size=30, k=10)
+
+    return Pitch(
+        annotated_pitch_data_frame=processed_pitch_data,
+        top_k_freq_bins=top_k_freq_bins,
+        min_frequency=min_frequency,
+        max_frequency=max_frequency,
+        min_loudness=min_loudness,
+        max_loudness=max_loudness,
+    )
+
+
+def process_pitch_data_frame(pitch_data: pl.DataFrame, audio_file: str) -> pl.DataFrame:
+    """Add loudness, filter out rows with low confidence."""
+    loudness = calculate_loudness(audio_file)
+    pitch_data = add_loudness(pitch_data, loudness)
+
+    # Filter out low-confidence pitch data
+    pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
+    return pitch_data

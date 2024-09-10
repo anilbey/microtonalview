@@ -4,7 +4,7 @@ import polars as pl
 import pygame
 import pygame_gui
 from pydub import AudioSegment
-from audio_features import calculate_loudness, extract_pitch_data_frame
+from audio_features import extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
 from controller.audio_player import AudioPlayer
 from controller.event_handler import handle_loading_screen_events, handle_visualiser_events
@@ -12,11 +12,10 @@ from controller.program_state import ProgramState
 from view.screen import loading_screen
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
-    add_loudness,
     compute_x_positions_lazy,
     compute_y_positions_lazy,
     filter_data_by_time_window_lazy,
-    get_top_k_frequency_bins,
+    process_pitch_data,
 )
 from view.shape import Circle
 from view.color import Color
@@ -67,13 +66,13 @@ def main():
         cached_data: pl.DataFrame | None = load_from_cache(audio_hash)
         with ThreadPoolExecutor() as executor:
             if cached_data is not None:
-                pitch_data = cached_data
+                raw_pitch_data = cached_data
                 print("Using cached data...")
             else:
                 future = executor.submit(extract_pitch_data_frame, audio_file)
-                print("Loading pitch data...")
+                print("Extracting pitch data...")
 
-                while not future.done():
+                while not future.done():  # Frame loop: extract pitch data
                     handle_loading_screen_events(manager, close_button, minimize_button)
 
                     loader.display_loading_screen()
@@ -83,32 +82,26 @@ def main():
                     pygame.display.flip()
                     pygame.time.Clock().tick(20)
 
-                pitch_data = future.result()
-            save_to_cache(audio_hash, pitch_data)
+                raw_pitch_data = future.result()
+            save_to_cache(audio_hash, raw_pitch_data)
 
-        print("Calculating loudness...")
-        loader.display_loading_screen()
-        loader.update_stdout_display()
-        manager.update(0.01)
-        manager.draw_ui(screen)
-        pygame.display.flip()
-        loudness = calculate_loudness(audio_file)
+            print("Processing pitch data...")
+            future_process = executor.submit(process_pitch_data, raw_pitch_data, audio_file)
 
-        pitch_data = add_loudness(pitch_data, loudness)
-        pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
-
-        min_frequency = pitch_data["frequency"].min()
-        max_frequency = pitch_data["frequency"].max()
-
-        min_loudness = pitch_data["loudness"].min()
-        max_loudness = pitch_data["loudness"].max()
-
-        top_k_freq_bins = get_top_k_frequency_bins(pitch_data, bin_size=30, k=10)
+            while not future_process.done():  # Frame loop: process pitch data
+                handle_loading_screen_events(manager, close_button, minimize_button)
+                loader.display_loading_screen()
+                loader.update_stdout_display()
+                manager.update(0.01)
+                manager.draw_ui(screen)
+                pygame.display.flip()
+                pygame.time.Clock().tick(20)
+            pitch = future_process.result()
 
     padding_percent = 0.15
     padding_bottom = int(usable_height * padding_percent)
 
-    scale_y = (usable_height - padding_bottom) / (max_frequency - min_frequency)
+    scale_y = (usable_height - padding_bottom) / (pitch.max_frequency - pitch.min_frequency)
     scale_x = width / 5
 
     static_elements_surface = pygame.Surface((width, usable_height), pygame.SRCALPHA)
@@ -122,10 +115,10 @@ def main():
 
     draw_frequency_lines(
         static_elements_surface,
-        top_k_freq_bins,
+        pitch.top_k_freq_bins,
         usable_height,
-        min_frequency,
-        max_frequency,
+        pitch.min_frequency,
+        pitch.max_frequency,
         padding_bottom,
     )
 
@@ -135,7 +128,7 @@ def main():
     clock = pygame.time.Clock()
 
     circle = Circle(0, 0, 0, 0)
-    lazy_pitch_data = pitch_data.lazy()
+    lazy_pitch_data = pitch.annotated_pitch_data_frame.lazy()
 
     audio_segment = AudioSegment.from_wav(audio_file)
     player = AudioPlayer(audio_segment)
@@ -168,7 +161,7 @@ def main():
             [
                 compute_x_positions_lazy(current_time, scale_x).alias("x"),
                 compute_y_positions_lazy(
-                    usable_height, padding_bottom, min_frequency, scale_y
+                    usable_height, padding_bottom, pitch.min_frequency, scale_y
                 ).alias("y"),
             ]
         )
@@ -184,8 +177,8 @@ def main():
             circle.loudness = row["loudness"]
             circle.confidence = row["confidence"]
 
-            circle_size = circle.compute_size(min_loudness, max_loudness)
-            color = circle.compute_color(current_time, min_frequency, max_frequency)
+            circle_size = circle.compute_size(pitch.min_loudness, pitch.max_loudness)
+            color = circle.compute_color(current_time, pitch.min_frequency, pitch.max_frequency)
 
             circle_surface = pygame.Surface(
                 (2 * circle_size, 2 * circle_size), pygame.SRCALPHA
