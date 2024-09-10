@@ -64,7 +64,7 @@ def main():
     with loading_screen(screen, width, height, "microtonal-view.png") as loader:
         audio_hash: str = hash_file(audio_file)
         cached_data: pl.DataFrame | None = load_from_cache(audio_hash)
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=2) as executor:
             if cached_data is not None:
                 raw_pitch_data = cached_data
                 print("Using cached data...")
