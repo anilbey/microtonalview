@@ -62,10 +62,10 @@ def main():
         object_id="#minimize_button",
     )
 
-    with ThreadPoolExecutor() as executor:
-        with loading_screen(screen, width, height, "microtonal-view.png") as loader:
-            audio_hash: str = hash_file(audio_file)
-            cached_data: pl.DataFrame | None = load_from_cache(audio_hash)
+    with loading_screen(screen, width, height, "microtonal-view.png") as loader:
+        audio_hash: str = hash_file(audio_file)
+        cached_data: pl.DataFrame | None = load_from_cache(audio_hash)
+        with ThreadPoolExecutor() as executor:
             if cached_data is not None:
                 pitch_data = cached_data
                 print("Using cached data...")
@@ -84,24 +84,26 @@ def main():
                     pygame.time.Clock().tick(20)
 
                 pitch_data = future.result()
-                save_to_cache(audio_hash, pitch_data)
+            save_to_cache(audio_hash, pitch_data)
 
-            print("Calculating loudness...")
-            loader.display_loading_screen()
-            loader.update_stdout_display()
-            manager.update(0.01)
-            manager.draw_ui(screen)
-            pygame.display.flip()
-            loudness = calculate_loudness(audio_file)
+        print("Calculating loudness...")
+        loader.display_loading_screen()
+        loader.update_stdout_display()
+        manager.update(0.01)
+        manager.draw_ui(screen)
+        pygame.display.flip()
+        loudness = calculate_loudness(audio_file)
 
-            pitch_data = add_loudness(pitch_data, loudness)
-            pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
+        pitch_data = add_loudness(pitch_data, loudness)
+        pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
 
-    min_frequency = pitch_data["frequency"].min()
-    max_frequency = pitch_data["frequency"].max()
+        min_frequency = pitch_data["frequency"].min()
+        max_frequency = pitch_data["frequency"].max()
 
-    min_loudness = pitch_data["loudness"].min()
-    max_loudness = pitch_data["loudness"].max()
+        min_loudness = pitch_data["loudness"].min()
+        max_loudness = pitch_data["loudness"].max()
+
+        top_k_freq_bins = get_top_k_frequency_bins(pitch_data, bin_size=30, k=10)
 
     padding_percent = 0.15
     padding_bottom = int(usable_height * padding_percent)
@@ -117,7 +119,7 @@ def main():
         (width // 2, usable_height),
         1,
     )
-    top_k_freq_bins = get_top_k_frequency_bins(pitch_data, bin_size=30, k=10)
+
     draw_frequency_lines(
         static_elements_surface,
         top_k_freq_bins,
