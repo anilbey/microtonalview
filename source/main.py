@@ -83,7 +83,7 @@ def main():
                     pygame.time.Clock().tick(20)
 
                 raw_pitch_data = future.result()
-            save_to_cache(audio_hash, raw_pitch_data)
+                save_to_cache(audio_hash, raw_pitch_data)
 
             print("Processing pitch data...")
             future_process = executor.submit(process_pitch_data, raw_pitch_data, audio_file)
