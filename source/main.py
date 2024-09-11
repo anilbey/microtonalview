@@ -9,7 +9,7 @@ from caching import hash_file, load_from_cache, save_to_cache
 from controller.audio_player import AudioPlayer
 from controller.event_handler import handle_loading_screen_events, handle_visualiser_events
 from controller.program_state import ProgramState
-from view.screen import loading_screen
+from view.loading_screen import loading_screen
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
     compute_x_positions_lazy,
