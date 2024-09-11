@@ -1,21 +1,16 @@
 import argparse
-from concurrent.futures import ThreadPoolExecutor
-import polars as pl
 import pygame
 import pygame_gui
 from pydub import AudioSegment
-from audio_features import extract_pitch_data_frame
-from caching import hash_file, load_from_cache, save_to_cache
 from controller.audio_player import AudioPlayer
-from controller.event_handler import handle_loading_screen_events, handle_visualiser_events
+from controller.event_handler import handle_visualiser_events
 from controller.program_state import ProgramState
-from view.loading_screen import loading_screen
+from controller.scene_manager import SceneManager
 from view.porte import draw_frequency_lines
 from dataframe_operations import (
     compute_x_positions_lazy,
     compute_y_positions_lazy,
     filter_data_by_time_window_lazy,
-    process_pitch_data,
 )
 from view.shape import Circle
 from view.color import Color
@@ -46,57 +41,11 @@ def main():
     pygame.display.set_caption("Microtonal View")
 
     # Initialize pygame_gui
-    manager = pygame_gui.UIManager((width, height))
-    close_button = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((width - 45, 10), (35, 35)),
-        text="X",
-        manager=manager,
-        object_id="#close_button",
-    )
+    ui_manager = pygame_gui.UIManager((width, height))
 
-    minimize_button = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((width - 85, 10), (35, 35)),
-        text="-",
-        manager=manager,
-        object_id="#minimize_button",
-    )
-
-    with loading_screen(screen, width, height, "microtonal-view.png") as loader:
-        audio_hash: str = hash_file(audio_file)
-        cached_data: pl.DataFrame | None = load_from_cache(audio_hash)
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            if cached_data is not None:
-                raw_pitch_data = cached_data
-                print("Using cached data...")
-            else:
-                future = executor.submit(extract_pitch_data_frame, audio_file)
-                print("Extracting pitch data...")
-
-                while not future.done():  # Frame loop: extract pitch data
-                    handle_loading_screen_events(manager, close_button, minimize_button)
-
-                    loader.display_loading_screen()
-                    loader.update_stdout_display()
-                    manager.update(0.01)
-                    manager.draw_ui(screen)
-                    pygame.display.flip()
-                    pygame.time.Clock().tick(20)
-
-                raw_pitch_data = future.result()
-                save_to_cache(audio_hash, raw_pitch_data)
-
-            print("Processing pitch data...")
-            future_process = executor.submit(process_pitch_data, raw_pitch_data, audio_file)
-
-            while not future_process.done():  # Frame loop: process pitch data
-                handle_loading_screen_events(manager, close_button, minimize_button)
-                loader.display_loading_screen()
-                loader.update_stdout_display()
-                manager.update(0.01)
-                manager.draw_ui(screen)
-                pygame.display.flip()
-                pygame.time.Clock().tick(20)
-            pitch = future_process.result()
+    # SceneManager manages the loading of pitch data
+    scene_manager = SceneManager(screen, width, height, ui_manager)
+    pitch = scene_manager.display_loading_screen(audio_file)
 
     padding_percent = 0.15
     padding_bottom = int(usable_height * padding_percent)
@@ -137,7 +86,7 @@ def main():
         relative_rect=pygame.Rect((20, height - 60), (width - 40, 40)),
         start_value=0,
         value_range=(0, 64),
-        manager=manager,
+        manager=ui_manager,
         object_id="#slider",
     )
 
@@ -149,7 +98,7 @@ def main():
         time_delta = clock.tick(60) / 1000.0
 
         program_state = handle_visualiser_events(
-            manager, close_button, minimize_button, player, slider, music_length
+            ui_manager, scene_manager.header_widgets.close_button, scene_manager.header_widgets.minimize_button, player, slider, music_length
         )
         current_time = player.get_elapsed_time()
         slider_percentage = (current_time / music_length) * slider.value_range[1]
@@ -197,8 +146,8 @@ def main():
         # Draw the FPS counter in the reserved top area
         screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
 
-        manager.update(time_delta)
-        manager.draw_ui(screen)
+        ui_manager.update(time_delta)
+        ui_manager.draw_ui(screen)
 
         pygame.display.flip()
 
