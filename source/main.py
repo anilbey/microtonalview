@@ -151,8 +151,5 @@ def main():
 
         pygame.display.flip()
 
-    player.stop()
-    pygame.quit()
-
 
 main()
