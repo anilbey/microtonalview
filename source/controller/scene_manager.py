@@ -4,13 +4,25 @@ from concurrent.futures import ThreadPoolExecutor
 import polars as pl
 import pygame
 import pygame_gui
+from pydub import AudioSegment
 
 from audio_features import extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
-from controller.event_handler import handle_loading_screen_events
-from dataframe_operations import process_pitch_data
+from controller.event_handler import handle_loading_screen_events, handle_visualiser_events
+from controller.program_state import ProgramState
+from dataframe_operations import (
+    process_pitch_data,
+    compute_x_positions_lazy,
+    compute_y_positions_lazy,
+    filter_data_by_time_window_lazy,
+)
 from model import Pitch
 from view.loading_screen import loading_screen
+from view.porte import draw_frequency_lines
+from view.shape import Circle
+from view.color import Color
+from view.text_display import fps_textbox
+from controller.audio_player import AudioPlayer
 
 
 class HeaderWidgets:
@@ -113,3 +125,117 @@ class SceneManager:
                 pitch = future_process.result()
 
         return pitch
+
+    def display_player(self, pitch: Pitch, audio_file: str) -> ProgramState:
+        """Display the player scene and handle the main loop."""
+        # Initialize necessary variables
+        top_area_height = 60  # Height reserved for buttons and FPS display
+        usable_height = self.height - top_area_height  # Height available for the rest of the program
+
+        padding_percent = 0.15
+        padding_bottom = int(usable_height * padding_percent)
+
+        scale_y = (usable_height - padding_bottom) / (pitch.max_frequency - pitch.min_frequency)
+        scale_x = self.width / 5
+
+        # Create surfaces for static and dynamic elements
+        static_elements_surface = pygame.Surface((self.width, usable_height), pygame.SRCALPHA)
+        pygame.draw.line(
+            static_elements_surface,
+            Color.MID_LINE_SEPARATOR,
+            (self.width // 2, 0),
+            (self.width // 2, usable_height),
+            1,
+        )
+
+        draw_frequency_lines(
+            static_elements_surface,
+            pitch.top_k_freq_bins,
+            usable_height,
+            pitch.min_frequency,
+            pitch.max_frequency,
+            padding_bottom,
+        )
+
+        dynamic_elements_surface = pygame.Surface((self.width, usable_height), pygame.SRCALPHA)
+
+        program_state = ProgramState.RUNNING
+        clock = pygame.time.Clock()
+
+        circle = Circle(0, 0, 0, 0)
+        lazy_pitch_data = pitch.annotated_pitch_data_frame.lazy()
+
+        audio_segment = AudioSegment.from_wav(audio_file)
+        player = AudioPlayer(audio_segment)
+
+        slider = pygame_gui.elements.UIHorizontalSlider(
+            relative_rect=pygame.Rect((20, self.height - 60), (self.width - 40, 40)),
+            start_value=0,
+            value_range=(0, 64),
+            manager=self.ui_manager,
+            object_id="#slider",
+        )
+
+        music_length = len(audio_segment) / 1000.0  # in seconds
+
+        player.play()  # Start playback
+
+        # Main loop
+        while player.is_playing() and program_state == ProgramState.RUNNING:
+            time_delta = clock.tick(60) / 1000.0
+
+            program_state = handle_visualiser_events(
+                self.ui_manager, self.header_widgets.close_button, self.header_widgets.minimize_button, player, slider, music_length
+            )
+            current_time = player.get_elapsed_time()
+            slider_percentage = (current_time / music_length) * slider.value_range[1]
+            slider.set_current_value(slider_percentage)
+
+            dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(
+                lazy_pitch_data, current_time
+            ).with_columns(
+                [
+                    compute_x_positions_lazy(current_time, scale_x).alias("x"),
+                    compute_y_positions_lazy(
+                        usable_height, padding_bottom, pitch.min_frequency, scale_y
+                    ).alias("y"),
+                ]
+            )
+            dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
+
+            # Clear the screen with white color (including the top area)
+            self.screen.fill(Color.WHITE)
+
+            dynamic_elements_surface.fill(Color.WHITE)
+            for row in dataframe_window_to_display.iter_rows(named=True):
+                circle.time = row["time"]
+                circle.frequency = row["frequency"]
+                circle.loudness = row["loudness"]
+                circle.confidence = row["confidence"]
+
+                circle_size = circle.compute_size(pitch.min_loudness, pitch.max_loudness)
+                color = circle.compute_color(current_time, pitch.min_frequency, pitch.max_frequency)
+
+                circle_surface = pygame.Surface(
+                    (2 * circle_size, 2 * circle_size), pygame.SRCALPHA
+                )
+                pygame.draw.circle(
+                    circle_surface, color, (circle_size, circle_size), circle_size
+                )
+                dynamic_elements_surface.blit(
+                    circle_surface,
+                    (int(row["x"]) - circle_size, int(row["y"]) - circle_size),
+                )
+
+            self.screen.blit(dynamic_elements_surface, (0, top_area_height))
+            self.screen.blit(static_elements_surface, (0, top_area_height))
+
+            # Draw the FPS counter in the reserved top area
+            self.screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
+
+            self.ui_manager.update(time_delta)
+            self.ui_manager.draw_ui(self.screen)
+
+            pygame.display.flip()
+
+        return program_state
