@@ -1,6 +1,7 @@
 """Rendering for the loading screen module."""
 
 import io
+from pathlib import Path
 import sys
 from typing import Self
 import pygame
@@ -10,7 +11,7 @@ class loading_screen:
     """Context manager that displays the loading screen."""
 
     def __init__(
-        self, screen: pygame.Surface, width: int, height: int, image_path: str
+        self, screen: pygame.Surface, width: int, height: int, image_path: Path
     ) -> None:
         self.screen = screen
         self.width = width

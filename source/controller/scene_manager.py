@@ -1,6 +1,7 @@
 """Manages the switching of scenes."""
 
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 import polars as pl
 import pygame
 import pygame_gui
@@ -73,7 +74,7 @@ class SceneManager:
     def display_loading_screen(self, audio_file: str) -> Pitch:
         """Display the loading screen and process the pitch data."""
         with loading_screen(
-            self.screen, int(self.width), int(self.height), "microtonal-view.png"
+            self.screen, int(self.width), int(self.height), Path("static") / "microtonal-view.png"
         ) as loader:
             audio_hash: str = hash_file(audio_file)
             cached_data: pl.DataFrame | None = load_from_cache(audio_hash)
@@ -168,8 +169,8 @@ class SceneManager:
         audio_segment = AudioSegment.from_wav(audio_file)
         player = AudioPlayer(audio_segment)
 
-        play_image = pygame.image.load('play_icon.png').convert_alpha()
-        pause_image = pygame.image.load('pause_icon.png').convert_alpha()
+        play_image = pygame.image.load(Path("static") / 'play_icon.png').convert_alpha()
+        pause_image = pygame.image.load(Path("static") / 'pause_icon.png').convert_alpha()
 
         # Resize images if necessary to fit the button size
         button_size = (40, 40)

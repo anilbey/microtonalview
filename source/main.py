@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 import pygame
 import pygame_gui
 from controller.scene_manager import SceneManager
@@ -10,7 +11,7 @@ def main():
     args = parser.parse_args()
     audio_file = args.audio
 
-    icon = pygame.image.load("logo.png")
+    icon = pygame.image.load(Path("static") / "logo.png")
     pygame.display.set_icon(icon)
 
     pygame.init()
