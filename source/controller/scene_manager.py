@@ -22,7 +22,6 @@ from view.loading_screen import loading_screen
 from view.porte import draw_frequency_lines
 from view.shape import Circle
 from view.color import Color
-from view.text_display import fps_textbox
 from controller.audio_player import AudioPlayer
 
 
@@ -130,7 +129,7 @@ class SceneManager:
     def display_player(self, pitch: Pitch, audio_file: str) -> ProgramState:
         """Display the player scene and handle the main loop."""
         # Initialize necessary variables
-        top_area_height = 60  # Height reserved for buttons and FPS display
+        top_area_height = 60  # Height reserved for top buttons
         usable_height = self.height - top_area_height  # Height available for the rest of the program
 
         padding_percent = 0.15
@@ -278,9 +277,6 @@ class SceneManager:
 
             self.screen.blit(dynamic_elements_surface, (0, top_area_height))
             self.screen.blit(static_elements_surface, (0, top_area_height))
-
-            # Draw the FPS counter in the reserved top area
-            self.screen.blit(fps_textbox(clock, font_size=36, color=Color.BLACK), dest=(10, 10))
 
             self.ui_manager.update(time_delta)
             self.ui_manager.draw_ui(self.screen)
