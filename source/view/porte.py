@@ -68,7 +68,7 @@ def draw_frequency_lines(
             closest_note,
             5,
             int(y) - 15,
-            Color.BLACK,
+            Color.NOTE_TEXT,
             Color.PORTE_OUTLINE,
             outline_width,
         )
