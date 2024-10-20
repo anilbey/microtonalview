@@ -8,3 +8,4 @@ class ProgramState(StrEnum):
 
     RUNNING = "running"
     TERMINATED = "terminated"
+    PAUSED = "paused"

@@ -168,8 +168,33 @@ class SceneManager:
         audio_segment = AudioSegment.from_wav(audio_file)
         player = AudioPlayer(audio_segment)
 
+        play_image = pygame.image.load('play_icon.png').convert_alpha()
+        pause_image = pygame.image.load('pause_icon.png').convert_alpha()
+
+        # Resize images if necessary to fit the button size
+        button_size = (40, 40)
+        play_image = pygame.transform.smoothscale(play_image, button_size)
+        pause_image = pygame.transform.smoothscale(pause_image, button_size)
+
+        # Define control area dimensions
+        control_area_height = 60
+        control_area_y = self.height - control_area_height
+
+        # Center controls vertically within control area
+        button_y = control_area_y + (control_area_height - button_size[1]) // 2
+        slider_height = 40
+        slider_y = control_area_y + (control_area_height - slider_height) // 2
+
+        play_pause_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((20, button_y), button_size),
+            text='',
+            manager=self.ui_manager,
+            object_id="#play_pause_button",
+        )
+        play_pause_button.set_image(pause_image)
+
         slider = pygame_gui.elements.UIHorizontalSlider(
-            relative_rect=pygame.Rect((20, self.height - 60), (self.width - 40, 40)),
+            relative_rect=pygame.Rect((70, slider_y), (self.width - 90, slider_height)),
             start_value=0,
             value_range=(0, 64),
             manager=self.ui_manager,
@@ -181,16 +206,31 @@ class SceneManager:
         player.play()  # Start playback
 
         # Main loop
-        while player.is_playing() and program_state == ProgramState.RUNNING:
+        while program_state != ProgramState.TERMINATED:
             time_delta = clock.tick(60) / 1000.0
 
             program_state = handle_visualiser_events(
-                self.ui_manager, self.header_widgets.close_button, self.header_widgets.minimize_button, player, slider, music_length
+                self.ui_manager,
+                self.header_widgets.close_button,
+                self.header_widgets.minimize_button,
+                player,
+                slider,
+                music_length,
+                play_pause_button,
+                program_state
             )
+            if program_state == ProgramState.RUNNING:
+                play_pause_button.set_image(pause_image)
+            elif program_state == ProgramState.PAUSED:
+                play_pause_button.set_image(play_image)
+
             current_time = player.get_elapsed_time()
+
+            # Update slider based on current_time
             slider_percentage = (current_time / music_length) * slider.value_range[1]
             slider.set_current_value(slider_percentage)
 
+            # Update visuals based on current_time
             dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(
                 lazy_pitch_data, current_time
             ).with_columns(
@@ -202,6 +242,14 @@ class SceneManager:
                 ]
             )
             dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
+
+            # Handle playback
+            if program_state == ProgramState.RUNNING:
+                if not player.is_playing():
+                    player.play(start_time=current_time)
+            elif program_state == ProgramState.PAUSED:
+                if player.is_playing():
+                    player.pause()
 
             # Clear the screen with white color (including the top area)
             self.screen.fill(Color.WHITE)
