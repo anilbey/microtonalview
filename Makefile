@@ -6,7 +6,7 @@ BASE_NAME = input/tunar-rast-taksim
 SCRIPT = source/main.py
 
 record:
-	python record_cli.py $(SCRIPT) $(BASE_NAME).mp4 $(BASE_NAME).wav
+	uv run record_cli.py $(SCRIPT) $(BASE_NAME).mp4 $(BASE_NAME).wav
 
 run:
-	python $(SCRIPT) $(BASE_NAME).wav
+	uv run $(SCRIPT) $(BASE_NAME).wav
