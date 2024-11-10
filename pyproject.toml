@@ -3,12 +3,12 @@ name = "microtonal-viz"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "crepe>=0.0.15",
     "librosa>=0.10.1",
-    "numpy>=1.26.2",
-    "polars>=1.4.1",
+    "numpy==1.26.4",
+    "polars==1.5.0",
     "pydub==0.25.1",
     "pygame-ce>=2.5.1",
     "pygame-gui>=0.6.12",
