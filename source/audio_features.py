@@ -16,6 +16,37 @@ def calculate_loudness(wav_file: Path) -> np.ndarray:
     return rms[0]
 
 
+def calculate_gpu_batch_size(device: str, memory_per_batch_element_mb=2, safety_margin=0.8, min_batch_size=16, max_batch_size=512) -> int:
+    """
+    Calculate the batch size based on available GPU memory with a safety margin.
+
+    Parameters:
+    - device: The GPU device to query.
+    - memory_per_batch_element_mb: Estimated memory usage per batch element in MB.
+    - safety_margin: Fraction of free memory to use (e.g., 0.8 for 80%).
+    - min_batch_size: Minimum batch size to use.
+    - max_batch_size: Maximum batch size to use.
+
+    Returns:
+    - batch_size: Calculated batch size.
+    """
+    # Get total and available GPU memory
+    total_memory = torch.cuda.get_device_properties(device).total_memory
+    reserved_memory = torch.cuda.memory_reserved(device)
+    allocated_memory = torch.cuda.memory_allocated(device)
+    free_memory = total_memory - (reserved_memory + allocated_memory)
+    free_memory_mb = free_memory / (1024 ** 2)
+
+    # Adjust free memory with safety margin
+    adjusted_free_memory_mb = free_memory_mb * safety_margin
+    batch_size = int(adjusted_free_memory_mb // memory_per_batch_element_mb)
+
+    # Set conservative maximum limit for batch size
+    batch_size = max(min_batch_size, min(batch_size, max_batch_size))
+
+    return batch_size
+
+
 def extract_pitch_data_frame(wav_file: Path) -> pl.DataFrame:
     """Extract pitch data using torchcrepe and return a polars DataFrame."""
     audio, sr = torchcrepe.load.audio(str(wav_file))
@@ -29,24 +60,7 @@ def extract_pitch_data_frame(wav_file: Path) -> pl.DataFrame:
         device = "cuda"
         torch.cuda.empty_cache()
         # Get total and available GPU memory
-        total_memory = torch.cuda.get_device_properties(device).total_memory
-        reserved_memory = torch.cuda.memory_reserved(device)
-        allocated_memory = torch.cuda.memory_allocated(device)
-        free_memory = total_memory - (reserved_memory + allocated_memory)
-        free_memory_mb = free_memory / (1024 ** 2)
-
-        # Estimate memory usage per batch element (this is an approximate value)
-        memory_per_batch_element_mb = 2  # Adjust based on empirical tests
-
-        # Introduce a safety margin (e.g., only use 80% of free memory)
-        safety_margin = 0.8
-        adjusted_free_memory_mb = free_memory_mb * safety_margin
-
-        # Set batch_size based on available memory with safety margin
-        batch_size = int(adjusted_free_memory_mb // memory_per_batch_element_mb)
-
-        # Set conservative maximum limit for batch size
-        batch_size = max(16, min(batch_size, 512))  # Maximum of 512 to avoid memory issues
+        batch_size = calculate_gpu_batch_size(device)
     else:
         device = "cpu"
         batch_size = 128
