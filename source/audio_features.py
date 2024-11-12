@@ -38,12 +38,19 @@ def extract_pitch_data_frame(wav_file: Path) -> pl.DataFrame:
         # Estimate memory usage per batch element (this is an approximate value)
         memory_per_batch_element_mb = 2  # Adjust based on empirical tests
 
-        # Set batch_size based on available memory
-        batch_size = int(free_memory_mb // memory_per_batch_element_mb)
-        batch_size = max(16, min(batch_size, 2048))
+        # Introduce a safety margin (e.g., only use 80% of free memory)
+        safety_margin = 0.8
+        adjusted_free_memory_mb = free_memory_mb * safety_margin
+
+        # Set batch_size based on available memory with safety margin
+        batch_size = int(adjusted_free_memory_mb // memory_per_batch_element_mb)
+
+        # Set conservative maximum limit for batch size
+        batch_size = max(16, min(batch_size, 512))  # Maximum of 512 to avoid memory issues
     else:
         device = "cpu"
         batch_size = 128
+
 
     print(f"Using batch_size: {batch_size}")
     audio = audio.to(device)
