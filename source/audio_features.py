@@ -16,14 +16,14 @@ def calculate_loudness(wav_file: Path) -> np.ndarray:
     return rms[0]
 
 
-def calculate_gpu_batch_size(device: str, memory_per_batch_element_mb=2, safety_margin=0.8, min_batch_size=16, max_batch_size=512) -> int:
+def calculate_gpu_batch_size(device: str, memory_per_batch_element_mb=2, safety_margin=0.7, min_batch_size=16, max_batch_size=256) -> int:
     """
     Calculate the batch size based on available GPU memory with a safety margin.
 
     Parameters:
     - device: The GPU device to query.
     - memory_per_batch_element_mb: Estimated memory usage per batch element in MB.
-    - safety_margin: Fraction of free memory to use (e.g., 0.8 for 80%).
+    - safety_margin: Fraction of free memory to use (e.g., 0.7 for 70%).
     - min_batch_size: Minimum batch size to use.
     - max_batch_size: Maximum batch size to use.
 
