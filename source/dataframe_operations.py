@@ -95,6 +95,4 @@ def process_pitch_data_frame(pitch_data: pl.DataFrame, audio_file: str) -> pl.Da
     loudness = calculate_loudness(audio_file)
     pitch_data = add_loudness(pitch_data, loudness)
 
-    # Filter out low-confidence pitch data
-    pitch_data = pitch_data.filter(pitch_data["confidence"] > 0.5)
     return pitch_data

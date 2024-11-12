@@ -8,6 +8,7 @@ dependencies = [
     "crepe>=0.0.15",
     "librosa>=0.10.1",
     "numpy==1.26.4",
+    "pesto-pitch>=1.0.0",
     "polars==1.5.0",
     "pydub==0.25.1",
     "pygame-ce>=2.5.1",
