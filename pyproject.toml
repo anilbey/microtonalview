@@ -5,7 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
-    "crepe>=0.0.15",
     "librosa>=0.10.1",
     "numpy==1.26.4",
     "polars==1.5.0",
@@ -13,5 +12,6 @@ dependencies = [
     "pygame-ce>=2.5.1",
     "pygame-gui>=0.6.12",
     "simpleaudio==1.0.4",
-    "tensorflow>=2.15.0",
+    "torch>=2.5.1",
+    "torchcrepe>=0.0.23",
 ]
