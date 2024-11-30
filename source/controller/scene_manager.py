@@ -18,10 +18,8 @@ from dataframe_operations import (
     filter_data_by_time_window_lazy,
 )
 from model import Pitch
+from view.player import PlayerView
 from view.loading_screen import loading_screen
-from view.porte import draw_frequency_lines
-from view.shape import Circle
-from view.color import Color
 from controller.audio_player import AudioPlayer
 
 
@@ -128,82 +126,27 @@ class SceneManager:
 
     def display_player(self, pitch: Pitch, audio_file: str) -> ProgramState:
         """Display the player scene and handle the main loop."""
-        # Initialize necessary variables
-        top_area_height = 60  # Height reserved for top buttons
-        usable_height = self.height - top_area_height  # Height available for the rest of the program
+        # Initialize audio player
+        audio_segment = AudioSegment.from_wav(audio_file)
+        player = AudioPlayer(audio_segment)
+        player.play()  # Start playback
 
-        padding_percent = 0.15
-        padding_bottom = int(usable_height * padding_percent)
+        # Get music length in seconds
+        music_length = len(audio_segment) / 1000.0
 
-        scale_y = (usable_height - padding_bottom) / (pitch.max_frequency - pitch.min_frequency)
-        scale_x = self.width / 5
-
-        # Create surfaces for static and dynamic elements
-        static_elements_surface = pygame.Surface((self.width, usable_height), pygame.SRCALPHA)
-        pygame.draw.line(
-            static_elements_surface,
-            Color.MID_LINE_SEPARATOR,
-            (self.width // 2, 0),
-            (self.width // 2, usable_height),
-            1,
+        player_view = PlayerView(
+            self.screen,
+            self.width,
+            self.height,
+            self.ui_manager,
+            pitch,
+            music_length,
         )
-
-        draw_frequency_lines(
-            static_elements_surface,
-            pitch.top_k_freq_bins,
-            usable_height,
-            pitch.min_frequency,
-            pitch.max_frequency,
-            padding_bottom,
-        )
-
-        dynamic_elements_surface = pygame.Surface((self.width, usable_height), pygame.SRCALPHA)
 
         program_state = ProgramState.RUNNING
         clock = pygame.time.Clock()
 
-        circle = Circle(0, 0, 0, 0)
         lazy_pitch_data = pitch.annotated_pitch_data_frame.lazy()
-
-        audio_segment = AudioSegment.from_wav(audio_file)
-        player = AudioPlayer(audio_segment)
-
-        play_image = pygame.image.load(Path("static") / 'play_icon.png').convert_alpha()
-        pause_image = pygame.image.load(Path("static") / 'pause_icon.png').convert_alpha()
-
-        # Resize images if necessary to fit the button size
-        button_size = (40, 40)
-        play_image = pygame.transform.smoothscale(play_image, button_size)
-        pause_image = pygame.transform.smoothscale(pause_image, button_size)
-
-        # Define control area dimensions
-        control_area_height = 60
-        control_area_y = self.height - control_area_height
-
-        # Center controls vertically within control area
-        button_y = control_area_y + (control_area_height - button_size[1]) // 2
-        slider_height = 40
-        slider_y = control_area_y + (control_area_height - slider_height) // 2
-
-        play_pause_button = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect((20, button_y), button_size),
-            text='',
-            manager=self.ui_manager,
-            object_id="#play_pause_button",
-        )
-        play_pause_button.set_image(pause_image)
-
-        slider = pygame_gui.elements.UIHorizontalSlider(
-            relative_rect=pygame.Rect((70, slider_y), (self.width - 90, slider_height)),
-            start_value=0,
-            value_range=(0, 64),
-            manager=self.ui_manager,
-            object_id="#slider",
-        )
-
-        music_length = len(audio_segment) / 1000.0  # in seconds
-
-        player.play()  # Start playback
 
         # Main loop
         while program_state != ProgramState.TERMINATED:
@@ -214,30 +157,27 @@ class SceneManager:
                 self.header_widgets.close_button,
                 self.header_widgets.minimize_button,
                 player,
-                slider,
+                player_view.slider,
                 music_length,
-                play_pause_button,
-                program_state
+                player_view.play_pause_button,
+                program_state,
             )
-            if program_state == ProgramState.RUNNING:
-                play_pause_button.set_image(pause_image)
-            elif program_state == ProgramState.PAUSED:
-                play_pause_button.set_image(play_image)
 
             current_time = player.get_elapsed_time()
 
-            # Update slider based on current_time
-            slider_percentage = (current_time / music_length) * slider.value_range[1]
-            slider.set_current_value(slider_percentage)
+            player_view.update_controls(current_time, program_state)
 
             # Update visuals based on current_time
             dataframe_window_to_display_lazy = filter_data_by_time_window_lazy(
                 lazy_pitch_data, current_time
             ).with_columns(
                 [
-                    compute_x_positions_lazy(current_time, scale_x).alias("x"),
+                    compute_x_positions_lazy(current_time, player_view.scale_x).alias("x"),
                     compute_y_positions_lazy(
-                        usable_height, padding_bottom, pitch.min_frequency, scale_y
+                        player_view.usable_height,
+                        player_view.padding_bottom,
+                        pitch.min_frequency,
+                        player_view.scale_y,
                     ).alias("y"),
                 ]
             )
@@ -251,33 +191,8 @@ class SceneManager:
                 if player.is_playing():
                     player.pause()
 
-            # Clear the screen with white color (including the top area)
-            self.screen.fill(Color.WHITE)
-
-            dynamic_elements_surface.fill(Color.WHITE)
-            for row in dataframe_window_to_display.iter_rows(named=True):
-                circle.time = row["time"]
-                circle.frequency = row["frequency"]
-                circle.loudness = row["loudness"]
-                circle.confidence = row["confidence"]
-
-                circle_size = circle.compute_size(pitch.min_loudness, pitch.max_loudness)
-                color = circle.compute_color(current_time, pitch.min_frequency, pitch.max_frequency)
-
-                circle_surface = pygame.Surface(
-                    (2 * circle_size, 2 * circle_size), pygame.SRCALPHA
-                )
-                pygame.draw.circle(
-                    circle_surface, color, (circle_size, circle_size), circle_size
-                )
-                dynamic_elements_surface.blit(
-                    circle_surface,
-                    (int(row["x"]) - circle_size, int(row["y"]) - circle_size),
-                )
-
-            self.screen.blit(dynamic_elements_surface, (0, top_area_height))
-            self.screen.blit(static_elements_surface, (0, top_area_height))
-
+            player_view.update_dynamic_elements(dataframe_window_to_display, current_time)
+            player_view.render()
             self.ui_manager.update(time_delta)
             self.ui_manager.draw_ui(self.screen)
 
