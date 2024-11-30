@@ -93,7 +93,7 @@ class SceneManager:
                             self.header_widgets.close_button,
                             self.header_widgets.minimize_button,
                         )
-                        loader.display_loading_screen()
+                        loader.render_loading_screen()
                         loader.update_stdout_display()
                         self.ui_manager.update(0.01)
                         self.ui_manager.draw_ui(self.screen)
@@ -115,7 +115,7 @@ class SceneManager:
                         self.header_widgets.close_button,
                         self.header_widgets.minimize_button,
                     )
-                    loader.display_loading_screen()
+                    loader.render_loading_screen()
                     loader.update_stdout_display()
                     self.ui_manager.update(0.01)
                     self.ui_manager.draw_ui(self.screen)

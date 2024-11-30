@@ -27,13 +27,13 @@ class loading_screen:
     def __enter__(self) -> Self:
         self.original_stdout = sys.stdout
         sys.stdout = self.stdout_buffer
-        self.display_loading_screen()
+        self.render_loading_screen()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self.original_stdout
 
-    def display_loading_screen(self) -> None:
+    def render_loading_screen(self) -> None:
         self.screen.fill((255, 255, 255))  # Redraw the white background
 
         image_rect = self.loading_image.get_rect()
