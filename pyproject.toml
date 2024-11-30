@@ -15,3 +15,9 @@ dependencies = [
     "torch>=2.5.1",
     "torchcrepe>=0.0.23",
 ]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13.0",
+    "ruff>=0.8.1",
+]

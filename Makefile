@@ -1,6 +1,6 @@
 lint:
-	mypy --ignore-missing-imports .
-	ruff check .
+	uv run mypy --ignore-missing-imports source
+	uv run ruff check source
 
 BASE_NAME = input/tunar-rast-taksim
 SCRIPT = source/main.py
