@@ -3,13 +3,14 @@ from pathlib import Path
 import pygame
 import pygame_gui
 from controller.scene_manager import SceneManager
+from controller.program_state import ProgramState
 
 
 def main():
     parser = argparse.ArgumentParser(description="Microtonal Pitch Visualisation")
-    parser.add_argument("audio", help="Path to the .wav file")
+    parser.add_argument("audio", nargs='?', help="Path to the .wav file (optional)")
     args = parser.parse_args()
-    audio_file = args.audio
+    audio_file: str | None = args.audio
 
     icon = pygame.image.load(Path("static") / "logo.png")
     pygame.display.set_icon(icon)
@@ -30,10 +31,12 @@ def main():
 
     # SceneManager manages the loading of pitch data
     scene_manager = SceneManager(screen, width, height, ui_manager)
-    pitch = scene_manager.display_loading_screen(audio_file)
-
-    # Now call display_player
-    scene_manager.display_player(pitch, audio_file)
+    program_state = ProgramState.MENU
+    while program_state != ProgramState.TERMINATED:
+        if audio_file is None:
+            audio_file = scene_manager.display_menu()
+        pitch = scene_manager.display_loading_screen(audio_file)
+        program_state = scene_manager.display_player(pitch, audio_file)
 
 
 if __name__ == "__main__":

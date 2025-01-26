@@ -9,7 +9,7 @@ from pydub import AudioSegment
 
 from audio_features import extract_pitch_data_frame
 from caching import hash_file, load_from_cache, save_to_cache
-from controller.event_handler import handle_loading_screen_events, handle_visualiser_events
+from controller.event_handler import handle_header_events, handle_visualiser_events
 from controller.program_state import ProgramState
 from dataframe_operations import (
     process_pitch_data,
@@ -68,6 +68,57 @@ class SceneManager:
         self.ui_manager = ui_manager
         self.header_widgets = HeaderWidgets(width, ui_manager)
 
+    def display_menu(self) -> str | None:
+        """Display the main menu and return the selected audio file path."""
+        logo_image = pygame.image.load(Path("static") / "microtonal-view.png")
+        logo_rect = logo_image.get_rect(center=(self.width/2, self.height/3))
+
+        load_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((self.width/2 - 150, self.height/2), (300, 80)),
+            text="Load a WAV file",
+            manager=self.ui_manager,
+        )
+
+        file_dialog: pygame_gui.windows.UIFileDialog | None = None
+        selected_file: str | None = None
+        program_running = True
+        clock = pygame.time.Clock()
+
+        while program_running:
+            time_delta = clock.tick(60) / 1000.0
+            for event in pygame.event.get():
+                self.ui_manager.process_events(event)
+                if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                    if event.ui_element == self.header_widgets.close_button:
+                        pygame.quit()
+                    elif event.ui_element == self.header_widgets.minimize_button:
+                        pygame.display.iconify()
+                    elif event.ui_element == load_button:
+                        file_dialog = pygame_gui.windows.UIFileDialog(
+                            rect=pygame.Rect(0, 0, 800, 600),
+                            manager=self.ui_manager,
+                            window_title="Open Audio File",
+                            initial_file_path=str(Path.home()),
+                            allow_picking_directories=False,
+                            allowed_suffixes={".wav"}
+                        )
+                if event.type == pygame_gui.UI_FILE_DIALOG_PATH_PICKED:
+                    if event.ui_element == file_dialog:
+                        selected_file = event.text
+                        program_running = False
+
+            self.ui_manager.update(time_delta)
+            self.screen.fill((255, 255, 255))
+            self.screen.blit(logo_image, logo_rect)
+            self.ui_manager.draw_ui(self.screen)
+            pygame.display.flip()
+
+        load_button.kill()
+        if file_dialog:
+            file_dialog.kill()
+
+        return selected_file
+
     def display_loading_screen(self, audio_file: str) -> Pitch:
         """Display the loading screen and process the pitch data."""
         with loading_screen(
@@ -86,7 +137,7 @@ class SceneManager:
 
                     # Frame loop: extract pitch data
                     while not future.done():
-                        handle_loading_screen_events(
+                        handle_header_events(
                             self.ui_manager,
                             self.header_widgets.close_button,
                             self.header_widgets.minimize_button,
@@ -108,7 +159,7 @@ class SceneManager:
 
                 # Frame loop: process pitch data
                 while not future_process.done():
-                    handle_loading_screen_events(
+                    handle_header_events(
                         self.ui_manager,
                         self.header_widgets.close_button,
                         self.header_widgets.minimize_button,
@@ -143,7 +194,7 @@ class SceneManager:
             music_length,
         )
 
-        program_state = ProgramState.RUNNING
+        program_state = ProgramState.PLAYING
         clock = pygame.time.Clock()
 
         lazy_pitch_data = pitch.annotated_pitch_data_frame.lazy()
@@ -184,7 +235,7 @@ class SceneManager:
             dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
 
             # Handle playback
-            if program_state == ProgramState.RUNNING:
+            if program_state == ProgramState.PLAYING:
                 if not player.is_playing():
                     player.play(start_time=current_time)
             elif program_state == ProgramState.PAUSED:

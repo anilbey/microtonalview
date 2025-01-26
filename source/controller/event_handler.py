@@ -29,10 +29,10 @@ def handle_visualiser_events(
             elif event.ui_element == minimize_button:
                 pygame.display.iconify()
             elif event.ui_element == play_pause_button:
-                if program_state == ProgramState.RUNNING:
+                if program_state == ProgramState.PLAYING:
                     return ProgramState.PAUSED
                 elif program_state == ProgramState.PAUSED:
-                    return ProgramState.RUNNING
+                    return ProgramState.PLAYING
             else:
                 continue
 
@@ -62,10 +62,10 @@ def handle_visualiser_events(
                 current_time = (new_value / slider.value_range[1]) * music_length
                 player.seek(current_time)
             elif event.key == pygame.K_SPACE:
-                if program_state == ProgramState.RUNNING:
+                if program_state == ProgramState.PLAYING:
                     return ProgramState.PAUSED
                 elif program_state == ProgramState.PAUSED:
-                    return ProgramState.RUNNING
+                    return ProgramState.PLAYING
             else:
                 continue
         else:
@@ -74,12 +74,12 @@ def handle_visualiser_events(
     return program_state
 
 
-def handle_loading_screen_events(
+def handle_header_events(
     ui_manager: pygame_gui.UIManager,
     close_button: pygame_gui.elements.UIButton,
     minimize_button: pygame_gui.elements.UIButton
 ) -> None:
-    """Event handler for the loading screen with future cancellation."""
+    """Event handler for the header buttons."""
     for event in pygame.event.get():
         ui_manager.process_events(event)
         if event.type == pygame.QUIT:

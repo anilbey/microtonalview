@@ -118,7 +118,7 @@ class PlayerView:
         self.slider.set_current_value(current_time)
 
         # Update play/pause button image
-        if program_state == ProgramState.RUNNING:
+        if program_state == ProgramState.PLAYING:
             self.play_pause_button.set_image(self.pause_image)
         elif program_state == ProgramState.PAUSED:
             self.play_pause_button.set_image(self.play_image)

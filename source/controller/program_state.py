@@ -6,6 +6,7 @@ from enum import StrEnum
 class ProgramState(StrEnum):
     """The state of the program."""
 
-    RUNNING = "running"
+    PLAYING = "playing"
     TERMINATED = "terminated"
     PAUSED = "paused"
+    MENU = "menu"
