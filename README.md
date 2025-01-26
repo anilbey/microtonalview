@@ -8,9 +8,13 @@
 
 MicrotonalView is a tool for visualizing pitch data from audio files. It provides a graphical interface to display pitch data and allows users to interact with the visualization.
 
-![Demo GIF](assets/demo.gif)
+<p align="center">
+  <img src="assets/demo.gif" alt="Demo GIF" />
+</p>
 
-[Watch with sound on YouTube](https://youtu.be/zC3XGvqq0Qg)
+<p align="center">
+  <a href="https://youtu.be/zC3XGvqq0Qg">Watch with sound on YouTube</a>
+</p>
 
 ## How to use
 
