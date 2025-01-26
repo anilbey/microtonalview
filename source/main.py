@@ -12,7 +12,7 @@ def main():
     args = parser.parse_args()
     audio_file: str | None = args.audio
 
-    icon = pygame.image.load(Path("static") / "logo.png")
+    icon = pygame.image.load(Path("assets") / "logo.png")
     pygame.display.set_icon(icon)
 
     pygame.init()

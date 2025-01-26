@@ -73,8 +73,8 @@ class PlayerView:
     def init_controls(self):
         """Initialize playback controls."""
         # Load images
-        play_image = pygame.image.load(Path("static") / "play_icon.png").convert_alpha()
-        pause_image = pygame.image.load(Path("static") / "pause_icon.png").convert_alpha()
+        play_image = pygame.image.load(Path("assets") / "play_icon.png").convert_alpha()
+        pause_image = pygame.image.load(Path("assets") / "pause_icon.png").convert_alpha()
 
         # Resize images if necessary to fit the button size
         button_size = (40, 40)

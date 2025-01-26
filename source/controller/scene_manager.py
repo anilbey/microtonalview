@@ -70,7 +70,7 @@ class SceneManager:
 
     def display_menu(self) -> str | None:
         """Display the main menu and return the selected audio file path."""
-        logo_image = pygame.image.load(Path("static") / "microtonal-view.png")
+        logo_image = pygame.image.load(Path("assets") / "microtonal-view.png")
         logo_rect = logo_image.get_rect(center=(self.width/2, self.height/3))
 
         load_button = pygame_gui.elements.UIButton(
@@ -122,7 +122,7 @@ class SceneManager:
     def display_loading_screen(self, audio_file: str) -> Pitch:
         """Display the loading screen and process the pitch data."""
         with loading_screen(
-            self.screen, int(self.width), int(self.height), Path("static") / "microtonal-view.png"
+            self.screen, int(self.width), int(self.height), Path("assets") / "microtonal-view.png"
         ) as loader:
             audio_hash: str = hash_file(audio_file)
             cached_data: pl.DataFrame | None = load_from_cache(audio_hash)
