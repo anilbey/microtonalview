@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "microtonalview"
+version: 0.0.2
+date-released: 2025-05-15
+url: "https://github.com/anilbey/microtonalview"
+repository-code: "https://github.com/anilbey/microtonalview"
+license: "MIT"
+abstract: "A visualization tool for analyzing and exploring microtonal music."
+keywords:
+  - music
+  - microtonal
+  - tuning
+  - visualization
+authors:
+  - family-names: "Tuncel"
+    given-names: "Anıl"
+    orcid: "https://orcid.org/0000-0003-0317-2556"
