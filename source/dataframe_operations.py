@@ -78,7 +78,7 @@ def process_pitch_data(pitch_data: pl.DataFrame, audio_file: str) -> Pitch:
     min_loudness = processed_pitch_data["loudness"].min()
     max_loudness = processed_pitch_data["loudness"].max()
 
-    top_k_freq_bins = get_top_k_frequency_bins(processed_pitch_data, bin_size=30, k=10)
+    top_k_freq_bins = get_top_k_frequency_bins(processed_pitch_data, bin_size=30, k=15)
 
     return Pitch(
         annotated_pitch_data_frame=processed_pitch_data,
