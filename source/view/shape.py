@@ -1,6 +1,6 @@
 """Shape objects."""
 
-from view.color import RGBA, Color, blend_color, frequency_to_color
+from view.color import RGBA, Color, VisualEffect, blend_color, frequency_to_color
 
 
 class Circle:
@@ -17,13 +17,13 @@ class Circle:
         return loudness_to_size(self.loudness, min_loudness, max_loudness)
 
     def compute_color(
-        self, current_time: float, min_frequency: float, max_frequency: float
+        self, current_time: float, min_frequency: float, max_frequency: float, effect: VisualEffect = VisualEffect.DEFAULT
     ) -> RGBA:
         if abs(self.time - current_time) < 0.01:
             return Color.RED  # current circle red
         else:
             base_color = frequency_to_color(
-                self.frequency, min_frequency, max_frequency
+                self.frequency, min_frequency, max_frequency, effect=effect
             )
             return blend_color(base_color, self.confidence)
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import pygame_gui
 import polars as pl
 
-from view.color import Color
+from view.color import Color, VisualEffect
 from view.porte import draw_frequency_lines
 from view.shape import Circle
 from controller.program_state import ProgramState
@@ -45,6 +45,8 @@ class PlayerView:
             (self.width, self.usable_height), pygame.SRCALPHA
         )
         self.circle = Circle(0, 0, 0, 0)
+        # Visual effect setting - using enum now
+        self.visual_effect = VisualEffect.PASTEL
 
         # Initialize static elements and controls
         self.init_static_elements()
@@ -111,6 +113,15 @@ class PlayerView:
             manager=self.ui_manager,
             object_id="#slider",
         )
+        
+        # Create visual effect selector dropdown using enum values
+        effects = [effect.value for effect in VisualEffect]
+        self.effect_dropdown = pygame_gui.elements.UIDropDownMenu(
+            options_list=effects,
+            starting_option=self.visual_effect.value,
+            relative_rect=pygame.Rect((20, 10), (140, 30)),
+            manager=self.ui_manager
+        )
 
     def update_controls(self, current_time: float, program_state):
         """Update the controls based on current time and program state."""
@@ -122,6 +133,12 @@ class PlayerView:
             self.play_pause_button.set_image(self.pause_image)
         elif program_state == ProgramState.PAUSED:
             self.play_pause_button.set_image(self.play_image)
+            
+        # Check if visual effect has changed
+        for event in pygame.event.get(pygame_gui.UI_DROP_DOWN_MENU_CHANGED):
+            if event.ui_element == self.effect_dropdown:
+                # Convert string to enum value
+                self.visual_effect = VisualEffect(event.text)
 
     def update_dynamic_elements(
         self, dataframe_window_to_display: pl.DataFrame, current_time: float
@@ -141,7 +158,10 @@ class PlayerView:
                 self.pitch.min_loudness, self.pitch.max_loudness
             )
             color = self.circle.compute_color(
-                current_time, self.pitch.min_frequency, self.pitch.max_frequency
+                current_time, 
+                self.pitch.min_frequency, 
+                self.pitch.max_frequency,
+                effect=self.visual_effect
             )
 
             circle_surface = pygame.Surface(
