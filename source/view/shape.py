@@ -33,5 +33,5 @@ def loudness_to_size(
 ) -> float:
     """Mapping loudness to circle size."""
     normalized_loudness = (loudness - min_loudness) / (max_loudness - min_loudness)
-    res = max(1, int(normalized_loudness * 10))  # Scale and ensure minimum size of 1
+    res = max(1.8, int(normalized_loudness * 10))
     return res * 2.5  # Scale up to make circles bigger
