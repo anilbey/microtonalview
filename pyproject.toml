@@ -12,8 +12,8 @@ dependencies = [
     "pygame-ce>=2.5.5",
     "pygame-gui>=0.6.14",
     "simpleaudio==1.0.4",
-    "torch>=2.5.1",
-    "torchcrepe>=0.0.23",
+    "torch>=2.7.1",
+    "torchcrepe>=0.0.24",
 ]
 
 [dependency-groups]
