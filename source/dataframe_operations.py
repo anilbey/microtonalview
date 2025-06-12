@@ -6,29 +6,67 @@ import polars as pl
 from audio_features import calculate_loudness
 from model import Pitch
 
-
-def _calculate_frequency_bins(
-    df: pl.DataFrame, bin_size: int
-) -> tuple[np.ndarray, np.ndarray]:
-    """Calculate the frequency bin usage."""
-    min_freq = df["frequency"].min()
-    max_freq = df["frequency"].max()
-    bins: np.ndarray = np.arange(min_freq, max_freq, bin_size)
-    freq_counts, _ = np.histogram(df["frequency"], bins)
-    return freq_counts, bins
+from scipy.ndimage import gaussian_filter1d
+from scipy.signal import find_peaks
 
 
-def get_top_k_frequency_bins(data: pl.DataFrame, bin_size: int, k: int) -> pl.DataFrame:
-    # Calculate frequency bins
-    freq_counts, bins = _calculate_frequency_bins(data, bin_size)
+def find_actual_frequencies_from_peaks(
+    data: pl.DataFrame,
+    smoothing_sigma: float = 2.0,
+    peak_prominence: float = 0.05,
+    peak_distance_hz: float = 5.0,
+    freq_tolerance: float = 3.0
+) -> pl.DataFrame:
+    """
+    Detect important frequency regions by finding peaks in a smoothed frequency histogram,
+    and returning frequency *ranges* (start, end) for each region.
 
-    # Create a DataFrame for frequency bin data
-    bin_labels = [f"{bins[i]}-{bins[i+1]}" for i in range(len(bins) - 1)]
-    freq_df = pl.DataFrame({"Frequency Range": bin_labels, "Count": freq_counts})
+    Returns:
+        Polars DataFrame with columns ['start', 'end', 'count'].
+    """
 
-    # Get top k frequency bins
-    top_k_freq_bins = freq_df.top_k(k, by="Count")
-    return top_k_freq_bins
+    freqs = data["frequency"].to_numpy()
+
+    min_freq, max_freq = freqs.min(), freqs.max()
+    bin_width = 1.0
+    bins = np.arange(min_freq, max_freq + bin_width, bin_width)
+
+    hist_counts, bin_edges = np.histogram(freqs, bins=bins)
+    smoothed_counts = gaussian_filter1d(hist_counts, sigma=smoothing_sigma)
+
+    peaks, _ = find_peaks(
+        smoothed_counts,
+        prominence=peak_prominence * np.max(smoothed_counts),
+        distance=int(peak_distance_hz / bin_width),
+    )
+
+    peak_freqs = bin_edges[peaks]
+
+    start_freqs = []
+    end_freqs = []
+    counts = []
+
+    for pf in peak_freqs:
+        diffs = np.abs(freqs - pf)
+        close_indices = np.where(diffs <= freq_tolerance)[0]
+        if len(close_indices) == 0:
+            continue
+        close_freqs = freqs[close_indices]
+
+        start = close_freqs.min()
+        end = close_freqs.max()
+        count = len(close_freqs)
+
+        start_freqs.append(start)
+        end_freqs.append(end)
+        counts.append(count)
+
+    return pl.DataFrame({
+        "start": start_freqs,
+        "end": end_freqs,
+        "count": counts
+    }).sort("count", descending=True)
+
 
 
 def add_loudness(data: pl.DataFrame, loudness: np.ndarray) -> pl.DataFrame:
@@ -69,7 +107,6 @@ def compute_y_positions_lazy(
 
 
 def process_pitch_data(pitch_data: pl.DataFrame, audio_file: str) -> Pitch:
-    """Process the pitch data and return a Pitch object."""
     processed_pitch_data = process_pitch_data_frame(pitch_data, audio_file)
 
     min_frequency = processed_pitch_data["frequency"].min()
@@ -78,11 +115,18 @@ def process_pitch_data(pitch_data: pl.DataFrame, audio_file: str) -> Pitch:
     min_loudness = processed_pitch_data["loudness"].min()
     max_loudness = processed_pitch_data["loudness"].max()
 
-    top_k_freq_bins = get_top_k_frequency_bins(processed_pitch_data, bin_size=30, k=15)
+    # Extract pitch regions using peak-based method
+    clustered_freqs = find_actual_frequencies_from_peaks(
+        processed_pitch_data,
+        smoothing_sigma=2.0,
+        peak_prominence=0.05,
+        peak_distance_hz=5.0,
+        freq_tolerance=3.0
+    )
 
     return Pitch(
         annotated_pitch_data_frame=processed_pitch_data,
-        top_k_freq_bins=top_k_freq_bins,
+        top_k_freq_bins=clustered_freqs,
         min_frequency=min_frequency,
         max_frequency=max_frequency,
         min_loudness=min_loudness,

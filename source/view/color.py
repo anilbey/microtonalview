@@ -40,8 +40,9 @@ class Color:
     RED = RGBA(255, 0, 0, 255)
     MID_LINE_SEPARATOR = RGBA(255, 153, 51, 255)
     PORTE_OUTLINE = RGBA(252, 251, 237, 255)
-    PORTE_LINE = RGBA(178, 162, 167, 255)
+    PORTE_REGION = RGBA(255, 153, 51, 20)
     NOTE_TEXT = RGBA(33, 40, 45, 255)
+    BACKGROUND = RGBA(255, 255, 255, 255)
 
 
 def frequency_to_color(frequency: float, min_freq: float, max_freq: float, effect: VisualEffect = VisualEffect.DEFAULT) -> RGB:

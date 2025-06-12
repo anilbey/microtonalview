@@ -6,7 +6,7 @@ import pygame_gui
 import polars as pl
 
 from view.color import Color, VisualEffect
-from view.porte import draw_frequency_lines
+from view.porte import draw_frequency_regions
 from view.shape import Circle
 from controller.program_state import ProgramState
 
@@ -46,14 +46,14 @@ class PlayerView:
         )
         self.circle = Circle(0, 0, 0, 0)
         # Visual effect setting - using enum now
-        self.visual_effect = VisualEffect.PASTEL
+        self.visual_effect = VisualEffect.GRADIENT
 
         # Initialize static elements and controls
         self.init_static_elements()
         self.init_controls()
 
     def init_static_elements(self):
-        """Initialize static elements like frequency lines."""
+        """Initialize static elements like frequency regions."""
         # Draw mid-line separator
         pygame.draw.line(
             self.static_elements_surface,
@@ -63,7 +63,7 @@ class PlayerView:
             1,
         )
         # Draw frequency lines
-        draw_frequency_lines(
+        draw_frequency_regions(
             self.static_elements_surface,
             self.pitch.top_k_freq_bins,
             self.usable_height,
@@ -144,7 +144,7 @@ class PlayerView:
         self, dataframe_window_to_display: pl.DataFrame, current_time: float
     ):
         """Update dynamic elements based on current data."""
-        self.screen.fill(Color.WHITE)
+        self.screen.fill(Color.BACKGROUND)
         self.dynamic_elements_surface.fill(
             (0, 0, 0, 0)
         )  # Clear dynamic surface with transparent fill

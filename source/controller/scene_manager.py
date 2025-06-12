@@ -201,7 +201,7 @@ class SceneManager:
 
         # Main loop
         while program_state != ProgramState.TERMINATED:
-            time_delta = clock.tick(30) / 1000.0
+            time_delta = clock.tick(25) / 1000.0
 
             program_state = handle_visualiser_events(
                 self.ui_manager,

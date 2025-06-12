@@ -2,7 +2,7 @@ lint:
 	uv run mypy --ignore-missing-imports source
 	uv run ruff check source
 
-BASE_NAME = input/tunar-rast-taksim
+BASE_NAME = input/Arslan-Kürdilihicazkar-Taksim
 SCRIPT = source/main.py
 
 record:
