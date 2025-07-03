@@ -20,6 +20,11 @@ class AudioPlayer:
         # Slice the audio segment from the start_time
         segment_to_play = self.audio_segment[start_time * 1000:]
 
+        # Normalize audio format for simpleaudio compatibility, some wavs don't work otherwise
+        # Convert to 16-bit PCM if needed
+        if segment_to_play.sample_width != 2:
+            segment_to_play = segment_to_play.set_sample_width(2)
+
         # Extract raw data
         raw_data = segment_to_play.raw_data
 
