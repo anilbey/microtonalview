@@ -2,12 +2,13 @@ lint:
 	uv run mypy --ignore-missing-imports source
 	uv run ruff check source
 
-BASE_NAME = input/Arslan-Kürdilihicazkar-Taksim
+BASE_NAME = input/Gulzirahan-Satarim
 SCRIPT = source/main.py
 
 record:
-	uv run record_cli.py $(SCRIPT) $(BASE_NAME).mp4 $(BASE_NAME).wav
+	uv run $(SCRIPT) $(BASE_NAME).wav --record $(BASE_NAME).mp4 --fps 60
+
 run:
 	uv run $(SCRIPT)
 run-cli:
-	uv run $(SCRIPT) $(BASE_NAME).wav
+	uv run $(SCRIPT) $(BASE_NAME).wav --background input/kani-karaca-1.jpg

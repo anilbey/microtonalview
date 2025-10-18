@@ -1,5 +1,6 @@
 """Manages the switching of scenes."""
 
+import signal
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import polars as pl
@@ -21,6 +22,7 @@ from model import Pitch
 from view.player import PlayerView
 from view.loading_screen import loading_screen
 from controller.audio_player import AudioPlayer
+from video_recorder import VideoRecorder
 
 
 class HeaderWidgets:
@@ -175,12 +177,35 @@ class SceneManager:
 
         return pitch
 
-    def display_player(self, pitch: Pitch, audio_file: str) -> ProgramState:
-        """Display the player scene and handle the main loop."""
+    def display_player(
+        self, 
+        pitch: Pitch, 
+        audio_file: str, 
+        background_image_path: str | None = None,
+        record_to_file: str | None = None,
+        fps: int = 60
+    ) -> ProgramState:
+        """Display the player scene and handle the main loop.
+        
+        Two modes:
+        1. Play mode (record_to_file=None): Interactive playback with display
+        2. Record mode (record_to_file set): Headless video generation, no display
+        
+        Args:
+            pitch: Pitch data to visualize
+            audio_file: Path to audio file
+            background_image_path: Optional background image
+            record_to_file: Optional output video file path for recording (always headless)
+            fps: Frames per second for recording (default: 60)
+        """
         # Initialize audio player
         audio_segment = AudioSegment.from_wav(audio_file)
         player = AudioPlayer(audio_segment)
-        player.play()  # Start playback
+        
+        # Only play audio through speakers if NOT recording
+        # When recording, ffmpeg will add the audio directly from the file
+        if not record_to_file:
+            player.play()  # Start playback
 
         # Get music length in seconds
         music_length = len(audio_segment) / 1000.0
@@ -192,29 +217,86 @@ class SceneManager:
             self.ui_manager,
             pitch,
             music_length,
+            background_image_path=background_image_path,
         )
 
         program_state = ProgramState.PLAYING
         clock = pygame.time.Clock()
 
         lazy_pitch_data = pitch.annotated_pitch_data_frame.lazy()
+        
+        # Initialize video recorder if recording mode is enabled
+        recorder = None
+        frame_count = 0  # Track frame number for recording
+        interrupted = False  # Track Ctrl+C
+        
+        def signal_handler(signum, frame):
+            nonlocal interrupted
+            print("\n\n⚠️  Interrupted! Finalizing video...")
+            interrupted = True
+        
+        if record_to_file:
+            # Set up signal handler for Ctrl+C (optional early stop)
+            signal.signal(signal.SIGINT, signal_handler)
+            
+            recorder = VideoRecorder(
+                record_to_file, 
+                self.width, 
+                self.height, 
+                fps=fps,
+                audio_file=audio_file
+            )
+            recorder.start()
+            # Set target FPS for recording
+            target_fps = fps
+            print("\n🎬 RECORDING MODE (Headless)")
+            print(f"   Target FPS: {fps}")
+            print(f"   Audio length: {music_length:.2f} seconds")
+            print(f"   Expected frames: {int(music_length * fps)}")
+            print("   Video will automatically end when audio finishes")
+            print("   Starting frame generation...\n")
+        else:
+            # Normal interactive mode - use 25 FPS
+            target_fps = 25
 
         # Main loop
-        while program_state != ProgramState.TERMINATED:
-            time_delta = clock.tick(25) / 1000.0
+        while program_state != ProgramState.TERMINATED and not interrupted:
+            # In recording mode: don't limit FPS, generate frames as fast as possible
+            # In playback mode: limit to target FPS for smooth real-time display
+            if not recorder:
+                time_delta = clock.tick(target_fps) / 1000.0
+            else:
+                # Recording mode: no FPS limiting, use fixed time delta for UI updates
+                time_delta = 1.0 / fps
+                # Just process events without limiting speed
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        program_state = ProgramState.TERMINATED
 
-            program_state = handle_visualiser_events(
-                self.ui_manager,
-                self.header_widgets.close_button,
-                self.header_widgets.minimize_button,
-                player,
-                player_view.slider,
-                music_length,
-                player_view.play_pause_button,
-                program_state,
-            )
+            # Only handle interactive events in playback mode
+            if not recorder:
+                program_state = handle_visualiser_events(
+                    self.ui_manager,
+                    self.header_widgets.close_button,
+                    self.header_widgets.minimize_button,
+                    player,
+                    player_view.slider,
+                    music_length,
+                    player_view.play_pause_button,
+                    program_state,
+                )
 
-            current_time = player.get_elapsed_time()
+            # In recording mode, use frame-based timing for perfect sync
+            # In playback mode, use real-time audio position
+            if recorder:
+                current_time = frame_count / fps
+            else:
+                current_time = player.get_elapsed_time()
+            
+            # In recording mode, automatically quit when we reach the end of audio
+            if recorder and current_time >= music_length:
+                program_state = ProgramState.TERMINATED
+                break
 
             player_view.update_controls(current_time, program_state)
 
@@ -234,19 +316,39 @@ class SceneManager:
             )
             dataframe_window_to_display = dataframe_window_to_display_lazy.collect()
 
-            # Handle playback
-            if program_state == ProgramState.PLAYING:
-                if not player.is_playing():
-                    player.play(start_time=current_time)
-            elif program_state == ProgramState.PAUSED:
-                if player.is_playing():
-                    player.pause()
+            # Handle playback - only in interactive mode, not during recording
+            if not recorder:
+                if program_state == ProgramState.PLAYING:
+                    if not player.is_playing():
+                        player.play(start_time=current_time)
+                elif program_state == ProgramState.PAUSED:
+                    if player.is_playing():
+                        player.pause()
 
             player_view.update_dynamic_elements(dataframe_window_to_display, current_time)
             player_view.render()
             self.ui_manager.update(time_delta)
             self.ui_manager.draw_ui(self.screen)
 
-            pygame.display.flip()
+            # Update display only in play mode (not during recording)
+            if not recorder:
+                pygame.display.flip()
+            else:
+                # Recording mode: write frame to video
+                recorder.write_frame(self.screen)
+                frame_count += 1
+                
+                # Print progress every 60 frames (roughly every second of video at 60fps)
+                if frame_count % 60 == 0:
+                    progress = (current_time / music_length) * 100
+                    print(f"   Frame {frame_count:5d} | Time: {current_time:6.2f}s / {music_length:.2f}s | {progress:5.1f}%")
+        
+        # Finalize recording if it was enabled
+        if recorder:
+            print("\n✅ Recording complete!")
+            print(f"   Total frames written: {frame_count}")
+            print(f"   Expected frames: {int(music_length * fps)}")
+            print(f"   Video duration: {frame_count / fps:.2f} seconds")
+            recorder.finish()
 
         return program_state

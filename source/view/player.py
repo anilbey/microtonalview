@@ -22,6 +22,7 @@ class PlayerView:
         music_length: float,
         padding_percent: float = 0.15,
         top_area_height: int = 60,
+        background_image_path: str | None = None,
     ):
         """Initialize the PlayerView."""
         self.screen = screen
@@ -46,7 +47,22 @@ class PlayerView:
         )
         self.circle = Circle(0, 0, 0, 0)
         # Visual effect setting - using enum now
-        self.visual_effect = VisualEffect.GRADIENT
+        self.visual_effect = VisualEffect.VIBRANT
+
+        # Load and prepare background image if provided
+        self.background_image = None
+        if background_image_path:
+            try:
+                self.background_image = pygame.image.load(background_image_path).convert_alpha()
+                # Scale the image to fit the screen
+                self.background_image = pygame.transform.scale(
+                    self.background_image, (int(self.width), int(self.height))
+                )
+                # Make the background image 50% transparent
+                self.background_image.set_alpha(40)  # 128 = 50% of 255
+            except (pygame.error, FileNotFoundError):
+                print(f"Warning: Could not load background image: {background_image_path}")
+                self.background_image = None
 
         # Initialize static elements and controls
         self.init_static_elements()
@@ -144,7 +160,13 @@ class PlayerView:
         self, dataframe_window_to_display: pl.DataFrame, current_time: float
     ):
         """Update dynamic elements based on current data."""
+        # Always fill with background color first
         self.screen.fill(Color.BACKGROUND)
+        
+        # Then overlay the semi-transparent background image if available
+        if self.background_image:
+            self.screen.blit(self.background_image, (0, 0))
+            
         self.dynamic_elements_surface.fill(
             (0, 0, 0, 0)
         )  # Clear dynamic surface with transparent fill
